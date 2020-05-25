@@ -599,3 +599,92 @@ forAgainstLet.print();
 // October 27, 2014
 // https://davidwalsh.name/for-and-against-let
 // The only observable difference here is the lack of using new , calling the module factories as normal functions.
+
+// ES Modules
+// ES modules (ESM), introduced to the JS language in ES6, are meant to serve much the same spirit and purpose as
+// the existing classic modules just described, especially taking into account important variations and use cases from
+// AMD, UMD, and CommonJS.
+// The implementation approach does, however, differ significantly.
+// First, there's no wrapping function to define a module. The wrapping context is a file. ESMs are always file-based;
+// one file, one module.
+// Second, you don't interact with a module's "API" explicitly, but rather use the export keyword to add a variable or
+// method to its public API definition. If something is defined in a module but not export ed, then it stays hidden
+// (just as with classic modules).
+// Third, and maybe most noticeably different from previously discussed patterns, you don't "instantiate" an ES
+// module, you just import it to use its single instance. ESMs are, in effect, "singletons," in that there's only one
+// instance ever created, at first import in your program, and all other import s just receive a reference to that
+// same single instance. If your module needs to support multiple instantiations, you have to provide a classic
+// module-style factory function on your ESM definition for that purpose.
+// In our running example, we do assume multiple-instantiation, so these following snippets will mix both ESM and
+// classic modules.
+
+// Consider the file publication.js :
+function printDetails(title, author, pubDate) {
+  console.log(`
+Title: ${title}
+By: ${author}
+${pubDate}
+`);
+}
+// export function create(title, author, pubDate) {
+//   var publicAPI = {
+//     print() {
+//       printDetails(title, author, pubDate);
+//     },
+//   };
+//   return publicAPI;
+// }
+// To import and use this module, from another ES module like blogpost.js :
+
+// import { create as createPub } from "publication.js";
+
+function printDetails(pub, URL) {
+  pub.print();
+  console.log(URL);
+}
+
+// export function create(title, author, pubDate, URL) {
+//   var pub = createPub(title, author, pubDate);
+//   var publicAPI = {
+//     print() {
+//       printDetails(pub, URL);
+//     },
+//   };
+//   return publicAPI;
+// }
+
+// And finally, to use this module, we import into another ES module like main.js :
+
+// import { create as newBlogPost } from "blogpost.js";
+
+// var forAgainstLet = newBlogPost(
+//   "For and against let",
+//   "Kyle Simpson",
+//   "October 27, 2014",
+//   "https://davidwalsh.name/for-and-against-let"
+// );
+
+// forAgainstLet.print();
+
+// Title: For and against let
+// By: Kyle Simpson
+// October 27, 2014
+// https://davidwalsh.name/for-and-against-let
+// NOTE:
+// The as newBlogPost clause in the import statement is optional; if omitted, a top-level function just named
+// create(..) would be imported. In this case, I'm renaming it for readability sake; its more generic factory name
+// of create(..) becomes more semantically descriptive of its purpose as newBlogPost(..).
+// As shown, ES modules can use classic modules internally if they need to support multiple-instantiation.
+// Alternatively, we could have exposed a class from our module instead of a create(..) factory function, with
+// generally the same outcome. However, since you're already using ESM at that point, I'd recommend sticking with
+// classic modules instead of class .
+// If your module only needs a single instance, you can skip the extra layers of complexity: export its public
+// methods directly.
+// The Rabbit Hole Deepens
+// As promised at the top of this chapter, we just glanced over a wide surface area of the main parts of the JS
+// language. Your head may still be spinning, but that's entirely natural after such a firehose of information!
+// Even with just this "brief" survey of JS, we covered or hinted at a ton of details you should carefully consider and
+// ensure you are comfortable with. I'm serious when I suggest: re-read this chapter, maybe several times.
+// In the next chapter, we're going to dig much deeper into some important aspects of how JS works at its core. But
+// before you follow that rabbit hole deeper, make sure you've taken adequate time to fully digest what we've just
+// covered here.
