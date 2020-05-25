@@ -36,7 +36,7 @@ console.log(state1, "|", state2);
 // interpolation.
 // The back-tick ` -delimited string can be used without including interpolated expressions, but that defeats the
 // whole purpose of that alternate string literal syntax:
-// console.log(`Am I confusing you by omitting interpolation?`);
+console.log(`Am I confusing you by omitting interpolation?`);
 // output: Am I confusing you by omitting interpolation?
 // The better approach is to use " or ' (again, pick one and stick to it!) for strings unless you need interpolation;
 // reserve ` only for strings that will include interpolated expressions.
@@ -135,6 +135,16 @@ actors[2] = "Tom Cruise"; // OK :(
 // actors = []; // Error!
 // The best semantic use of a const is when you have a simple primitive value that you want to give a useful name
 // to, such as using myBirthday instead of true . This makes programs easier to read.
+
+// this array which is object in structure nature, is declared with const but we are adding multiple thins to it
+// so this means const declared objects can be changed but we can not re-assign whole object again with const declaration.
+const sex = [];
+for (let i = 0; i <= 5; i++) {
+  sex.push(i);
+}
+console.log(sex);
+sex[1] = 6;
+console.log(sex[1]);
 
 // Besides var / let / const , there are other syntactic forms that declare identifiers (variables) in various
 // scopes. For example:
@@ -267,6 +277,9 @@ console.log([1, 2, 3] === [1, 2, 3]); // false
 console.log({ a: 42 } === { a: 42 }); // false
 console.log(((x) => x * 2) === ((x) => x * 2)); // false
 
+console.log(Object.is(NaN, NaN)); // Correct
+console.log(NaN === NaN); // Wrong!
+
 // ******** What's going on here?
 // It may seem reasonable to assume that an equality check considers the nature or contents of the value; after all,
 // 42 === 42 considers the actual 42 value and compares it. But when it comes to objects, a content-aware
@@ -283,6 +296,10 @@ var y = x;
 y === x; // true
 y === [1, 2, 3]; // false
 x === [1, 2, 3]; // false
+y[0] = 4;
+// if we change any value inside y it also will change inside x too because they are by same refrence
+console.log(y[0]);
+console.log(x[0]);
 
 // In this snippet, y === x is true because both variables hold a reference to the same initial array. But the ===
 // [1,2,3] comparisons both fail because y and x , respectively, are being compared to new different arrays
@@ -311,6 +328,11 @@ x === [1, 2, 3]; // false
 // to be converted to numbers ( 42 and 1 , respectively) before the comparisons are made.
 // Just being aware of this nature of == —that it prefers primitive and numeric comparisons—helps you avoid most of
 // the troublesome corner cases, such as staying away from a gotchas like "" == 0 or 0 == false .
+console.log(1 == false); // false correct
+console.log(0 == false); // true wrong!
+console.log("" == 0); // true wrong!
+console.log([] == []); // false correct
+console.log("max" == "Max"); // false correct
 // You may be thinking, "Oh, well, I will always just avoid any coercive equality comparison (using === instead) to
 // avoid those corner cases"! Eh, sorry, that's not quite as likely as you would hope.
 // There's a pretty good chance that you'll use relational comparison operators like < , > (and even <= and >= ).
@@ -334,6 +356,9 @@ for (let i = 0; i < arr.length && arr[i] < 500; i++) {
 var x = "10";
 var y = "9";
 x < y; // true, watch out!
+// It will pick each character one by one and compare ... it will pick 1 from x and 9 from y so "1" < "9" and 1 < 9 so its true
+console.log("mAx" == "max");
+// it will pick each character so "m" == "m" is true then "A" == "a" not true so its a false in result.
 
 // There's no way to get these relational operators to avoid coercion, other than to just never use mismatched types in
 // the comparisons. That's perhaps admirable as a goal, but it's still pretty likely you're going to run into a case where
@@ -341,3 +366,236 @@ x < y; // true, watch out!
 // The wiser approach is not to avoid coercive comparisons, but to embrace and learn their ins and outs.
 // Coercive comparisons crop up in other places in JS, such as conditionals ( if , etc.), which we'll revisit in Appendix
 // A, "Coercive Conditional Comparison."
+
+const A = { 1: "time", 2: "human" };
+const B = { ...A };
+console.log(A == B); // false Reference Identities are not the same
+
+//  =====****Classes=====
+// The terms "object-oriented," "class-oriented," and "classes" are all very loaded full of detail and nuance; they're not
+// universal in definition.
+// We will use a common and somewhat traditional definition here, the one most likely familiar to those with
+// backgrounds in "object-oriented" languages like C++ and Java.
+// A class in a program is a definition of a "type" of custom data structure that includes both data and behaviors that
+// operate on that data. Classes define how such a data structure works, but classes are not themselves concrete
+// values. To get a concrete value that you can use in the program, a class must be instantiated (with the new
+// keyword) one or more times.
+class Page {
+  constructor(text) {
+    this.text = text;
+  }
+  print() {
+    console.log(this.text);
+  }
+}
+class Notebook {
+  constructor() {
+    this.pages = [];
+  }
+  addPage(text) {
+    var page = new Page(text);
+    this.pages.push(page);
+  }
+  print() {
+    for (let page of this.pages) {
+      page.print();
+    }
+  }
+}
+var mathNotes = new Notebook();
+mathNotes.addPage("Arithmetic: + - * / ...");
+mathNotes.addPage("Trigonometry: sin cos tan ...");
+mathNotes.print();
+
+// In the Page class, the data is a string of text stored in a this.text member property. The behavior is
+// print() , a method that dumps the text to the console.
+// For the Notebook class, the data is an array of Page instances. The behavior is addPage(..) , a method that
+// instantiates new Page pages and adds them to the list, as well as print() (which prints out all the pages in the
+// notebook).
+// The statement mathNotes = new Notebook() creates an instance of the Notebook class, and page = new
+// Page(text) is where instances of the Page class are created.
+// Behavior (methods) can only be called on instances (not the classes themselves), such as
+// mathNotes.addPage(..) and page.print() .
+// The class mechanism allows packaging data ( text and pages ) to be organized together with their behaviors
+// (e.g., addPage(..) and print() ). The same program could have been built without any class definitions,
+// but it would likely have been much less organized, harder to read and reason about, and more susceptible to bugs
+// and subpar maintenance.
+
+// Class Inheritance
+// Another aspect inherent to traditional "class-oriented" design, though a bit less commonly used in JS, is
+// "inheritance" (and "polymorphism"). Consider:
+
+class Publication {
+  constructor(title, author, pubDate) {
+    this.title = title;
+    this.author = author;
+    this.pubDate = pubDate;
+  }
+  print() {
+    console.log(`
+  Title: ${this.title}
+  By: ${this.author}
+  ${this.pubDate}
+  `);
+  }
+}
+
+// This Publication class defines a set of common behavior that any publication might need.
+// Now let's consider more specific types of publication, like Book and BlogPost :
+class Book extends Publication {
+  constructor(bookDetails) {
+    super(bookDetails.title, bookDetails.author, bookDetails.publishedOn);
+    this.publisher = bookDetails.publisher;
+    this.ISBN = bookDetails.ISBN;
+  }
+  print() {
+    super.print();
+    console.log(`
+Publisher: ${this.publisher}
+ISBN: ${this.ISBN}
+`);
+  }
+}
+class BlogPost extends Publication {
+  constructor(title, author, pubDate, URL) {
+    super(title, author, pubDate);
+    this.URL = URL;
+  }
+  print() {
+    super.print();
+    console.log(this.URL);
+  }
+}
+
+// Both Book and BlogPost use the extends clause to extend the general definition of Publication to
+// include additional behavior. The super(..) call in each constructor delegates to the parent Publication
+// class's constructor for its initialization work, and then they do more specific things according to their respective
+// publication type (aka, "sub-class" or "child class").
+// Now consider using these child classes:
+
+var YDKJS = new Book({
+  title: "You Don't Know JS",
+  author: "Kyle Simpson",
+  publishedOn: "June 2014",
+  publisher: "O'Reilly",
+  ISBN: "123456-789",
+});
+YDKJS.print();
+// Title: You Don't Know JS
+// By: Kyle Simpson
+// June 2014
+// Publisher: O'Reilly
+// ISBN: 123456-789
+var forAgainstLet = new BlogPost(
+  "For and against let",
+  "Kyle Simpson",
+  "October 27, 2014",
+  "https://davidwalsh.name/for-and-against-let"
+);
+forAgainstLet.print();
+// Title: For and against let
+// By: Kyle Simpson
+// October 27, 2014
+// https://davidwalsh.name/for-and-against-let
+
+// Notice that both child class instances have a print() method, which was an override of the inherited print()
+// method from the parent Publication class. Each of those overridden child class print() methods call
+// super.print() to invoke the inherited version of the print() method.
+// The fact that both the inherited and overridden methods can have the same name and co-exist is called
+// polymorphism.
+// Inheritance is a powerful tool for organizing data/behavior in separate logical units (classes), but allowing the child
+// class to cooperate with the parent by accessing/using its behavior and data.
+
+// =====*****Modules=====
+// The module pattern has essentially the same goal as the class pattern, which is to group data and behavior
+// together into logical units. Also like classes, modules can "include" or "access" the data and behaviors of other
+// modules, for cooperation sake.
+// But modules have some important differences from classes. Most notably, the syntax is entirely different.
+
+// Classic Modules
+// ES6 added a module syntax form to native JS syntax, which we'll look at in a moment. But from the early days of
+// JS, modules was an important and common pattern that was leveraged in countless JS programs, even without a
+// dedicated syntax.
+// The key hallmarks of a classic module are an outer function (that runs at least once), which returns an "instance" of
+// the module with one or more functions exposed that can operate on the module instance's internal (hidden) data.
+// Because a module of this form is just a function, and calling it produces an "instance" of the module, another
+// description for these functions is "module factories".
+// Consider the classic module form of the earlier Publication , Book , and BlogPost classes:
+function Publication2(title, author, pubDate) {
+  var publicAPI = {
+    print() {
+      console.log(`
+  Title: ${title}
+  By: ${author}
+  ${pubDate}
+  `);
+    },
+  };
+  return publicAPI;
+}
+function Book2(bookDetails) {
+  var pub = Publication2(
+    bookDetails.title,
+    bookDetails.author,
+    bookDetails.publishedOn
+  );
+  var publicAPI = {
+    print() {
+      pub.print();
+      console.log(`
+Publisher: ${bookDetails.publisher}
+ISBN: ${bookDetails.ISBN}
+`);
+    },
+  };
+  return publicAPI;
+}
+function BlogPost2(title, author, pubDate, URL) {
+  var pub = Publication2(title, author, pubDate);
+  var publicAPI = {
+    print() {
+      pub.print();
+      console.log(URL);
+    },
+  };
+  return publicAPI;
+}
+// Comparing these forms to the class forms, there are more similarities than differences.
+// The class form stores methods and data on an object instance, which must be accessed with the this.
+// prefix. With modules, the methods and data are accessed as identifier variables in scope, without any this.
+// prefix.
+
+// With class , the "API" of an instance is implicit in the class definition—also, all data and methods are public. With
+// the module factory function, you explicitly create and return an object with any publicly exposed methods, and any
+// data or other unreferenced methods remain private inside the factory function.
+// There are other variations to this factory function form that are quite common across JS, even in 2020; you may run
+// across these forms in different JS programs: AMD (Asynchronous Module Definition), UMD (Universal Module
+// Definition), and CommonJS (classic Node.js-style modules). The variations, however, are minor (yet not quite
+// compatible). Still, all of these forms rely on the same basic principles.
+// Consider also the usage (aka, "instantiation") of these module factory functions:
+
+var YDKJS = Book2({
+  title: "You Don't Know JS",
+  author: "Kyle Simpson",
+  publishedOn: "June 2014",
+  publisher: "O'Reilly",
+  ISBN: "123456-789",
+});
+YDKJS.print();
+// Title: You Don't Know JS
+// By: Kyle Simpson
+// June 2014
+// Publisher: O'Reilly
+// ISBN: 123456-789
+var forAgainstLet = BlogPost2(
+  "For and against let",
+  "Kyle Simpson",
+  "October 27, 2014",
+  "https://davidwalsh.name/for-and-against-let"
+);
+forAgainstLet.print();
+// Title: For and against let
+// By: Kyle Simpson
+// October 27, 2014
+// https://davidwalsh.name/for-and-against-let
+// The only observable difference here is the lack of using new , calling the module factories as normal functions.
