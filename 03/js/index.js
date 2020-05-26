@@ -1,5 +1,7 @@
 // Chapter 3: Digging to the Roots of JS
 
+// **********Iteration, Iterable, Iterator******** ==================================================================================
+
 // for..of Loop iterator
 const it = [1, 2, 3, 4, 5, 6];
 for (let value of it) {
@@ -26,7 +28,7 @@ doSomethingUseful(...it); // or doSomethingUseful([...it]) ?!
 // call with each iterated value
 // occupying an argument position.
 
-// Iterables
+// ***** Iterables
 // The iterator-consumption protocol is technically defined for consuming iterables; an iterable is a value that can be
 // iterated over.
 // The protocol automatically creates an iterator instance from an iterable, and consumes just that iterator instance to
@@ -96,7 +98,7 @@ for (let [idx, val] of arr.entries()) {
 // [1]: 20
 // [2]: 30
 
-// Consoling only kets
+// Consoling only keys
 for (let key of arr.keys()) {
   console.log(key);
 }
@@ -117,7 +119,7 @@ arr.forEach(function (value, key) {
 // doing so means you opt into the ability to consume your data with for..of loops and the ... operator.
 // "Standardizing" on this protocol means code that is overall more readily recognizable and readable.
 
-// ********Closure
+// ********Closure ******** =============================================================================================================
 
 // Perhaps without realizing it, almost every JS developer has made use of closure. In fact, closure is one of the most
 // pervasive programming functionalities across a majority of languages. It might even be as important to understand
@@ -215,3 +217,141 @@ for (let [idx, btn] of buttons.entries()) {
 // true of JS; it's hard to imagine doing anything useful without leveraging closure in one way or another.
 // If you're still feeling unclear or shaky about closure, the majority of Book 2, Scope & Closures is focused on the
 // topic.
+
+// ********* this Keyword ********** ================================================================================================
+
+// One of JS's most powerful mechanisms is also one of its most misunderstood: the this keyword. One common
+// misconception is that a function's this refers to the function itself. Because of how this works in other
+// languages, another misconception is that this points the instance that a method belongs to. Both are incorrect.
+// As discussed previously, when a function is defined, it is attached to its enclosing scope via closure. Scope is the
+// set of rules that controls how references to variables are resolved.
+
+// But functions also have another characteristic besides their scope that influences what they can access. This
+// characteristic is best described as an execution context, and it's exposed to the function via its this keyword.
+// Scope is static and contains a fixed set of variables available at the moment and location you define a function, but
+// a function's execution context is dynamic, entirely dependent on how it is called (regardless of where it is defined
+// or even called from).
+
+// this is not a fixed characteristic of a function based on the function's definition, but rather a dynamic
+// characteristic that's determined each time the function is called.
+// One way to think about the execution context is that it's a tangible object whose properties are made available to a
+// function while it executes. Compare that to scope, which can also be thought of as an object; except, the scope
+// object is hidden inside the JS engine, it's always the same for that function, and its properties take the form of
+// identifier variables available inside the function.
+
+function classroom(teacher) {
+  return function study() {
+    console.log(`${teacher} says to study ${this.topic}`);
+  };
+}
+var assignment = classroom("Max");
+
+// The outer classroom(..) function makes no reference to a this keyword, so it's just like any other function
+// we've seen so far. But the inner study() function does reference this , which makes it a this -aware
+// function. In other words, it's a function that is dependent on its execution context.
+// NOTE:
+// study() is also closed over the teacher variable from its outer scope.
+// The inner study() function returned by classroom("Kyle") is assigned to a variable called assignment .
+// So how can assignment() (aka study() ) be called?
+assignment();
+// Kyle says to study undefined -- Oops :(
+
+// In this snippet, we call assignment() as a plain, normal function, without providing it any execution context.
+// Since this program is not in strict mode (see Chapter 1, "Strictly Speaking"), context-aware functions that are called
+// without any context specified default the context to the global object ( window in the browser). As there is no
+// global variable named topic (and thus no such property on the global object), this.topic resolves to
+// undefined .
+// Now consider:
+
+var homework = {
+  topic: "JavaScript",
+  assignment,
+};
+
+homework.assignment();
+
+// A copy of the assignment function reference is set as a property on the homework object, and then it's called
+// as homework.assignment() . That means the this for that function call will be the homework object.
+// Hence, this.topic resolves to "JS" .
+
+var otherHomework = {
+  topic: "Node.js",
+};
+
+assignment.call(otherHomework);
+// Kyle says to study Node.js
+
+// The same context-aware function invoked three different ways, gives different answers each time for what object
+// this will reference.
+
+// ***** Prototypes ***** ===============================================================================================================
+
+// Where this is a characteristic of function execution, a prototype is a characteristic of an object, and specifically
+// resolution of a property access.
+// Think about a prototype as a linkage between two objects; the linkage is hidden behind the scenes, though there are
+// ways to expose and observe it. This prototype linkage occurs when an object is created; it's linked to another object
+// that already exists.
+// A series of objects linked together via prototypes is called the "prototype chain."
+// The purpose of this prototype linkage (i.e., from an object B to another object A) is so that accesses against B for
+// properties/methods that B does not have, are delegated to A to handle. Delegation of property/method access
+// allows two (or more!) objects to cooperate with each other to perform a task.
+// Consider defining an object as a normal literal:
+
+var game = {
+  name: "Company Of Heroes 2",
+};
+
+// The game object only has a single property on it: name . However, its default prototype linkage connects to
+// the Object.prototype object, which has common built-in methods on it like toString() and valueOf() ,
+// among others.
+// We can observe this prototype linkage delegation from game to Object.prototype :
+console.log(game.toString()); // [object Object]
+// game.toString() works even though game doesn't have a toString() method defined; the
+// delegation invokes Object.prototype.toString() instead.
+
+// ***** Object Linkage
+// To define an object prototype linkage, you can create the object using the Object.create(..) utility:
+
+var mathHomework = {
+  topic: "JS",
+};
+var anotherHomework = Object.create(mathHomework);
+console.log(anotherHomework);
+console.log(anotherHomework.topic); // JS
+
+// The first argument to Object.create(..) specifies an object to link the newly created object to, and then
+// returns the newly created (and linked!) object.
+
+// Delegation through the prototype chain only applies for accesses to lookup the value in a property. If you assign to
+// a property of an object, that will apply directly to the object regardless of where that object is prototype linked to.
+// TIP:
+Object.create(null);
+// creates an object that is not prototype linked anywhere, so it's purely just a standalone
+// object; in some circumstances, that may be preferable.
+// Consider:
+
+console.log(mathHomework.topic); // JS
+console.log(anotherHomework.topic); // JS
+anotherHomework.topic = "Node.js"; // Changing the anotheHomework.topic
+console.log(anotherHomework.topic); // Node.js
+console.log(mathHomework.topic); // JS not Node.js !
+
+// The assignment to topic creates a property of that name directly on otherHomework ; there's no effect on the
+// topic property on homework . The next statement then accesses otherHomework.topic , and we see the
+// non-delegated answer from that new property: "Math" .
+
+// ** Lets not confuse the Object.create() with short hands of it like below
+const newGame = game;
+// The above will grab the game Object from same reference identity so if we change anything in new game means it will change in game itself too
+// The reason is because we are not re-creating the newGame object from game but we are referencing to the same identity
+console.log(newGame.name); // Company Of Heroes
+newGame.name = "PUBG";
+console.log(game.name); // PUBG
+
+// The name on newGame is "shadowing" the property of the same name on the game object in the
+// chain.
+
+// NOTE:
+// Another frankly more convoluted but perhaps still more common way of creating an object with a prototype
+// linkage is using the "prototypal class" pattern, from before class (see Chapter 2, "Classes") was added in ES6.
+// We'll cover this topic in more detail in Appendix A, "Prototypal 'Classes'".
