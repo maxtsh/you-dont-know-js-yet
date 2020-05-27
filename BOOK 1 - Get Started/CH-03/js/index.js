@@ -50,6 +50,10 @@ for (let val of arr) {
 
 // Since arrays are iterables, we can shallow-copy an array using iterator consumption via the ... spread operator:
 var arrCopy = [...arr];
+console.log(arr);
+arrCopy[1] = 400;
+console.log(arr);
+console.log(arrCopy);
 
 // We can also iterate the characters in a string one at a time:
 var greeting = "Hello world!";
@@ -319,15 +323,17 @@ var anotherHomework = Object.create(mathHomework);
 console.log(anotherHomework);
 console.log(anotherHomework.topic); // JS
 
-// The first argument to Object.create(..) specifies an object to link the newly created object to, and then
+// The first argument to Object.create(...) specifies an object to link the newly created object to, and then
 // returns the newly created (and linked!) object.
 
 // Delegation through the prototype chain only applies for accesses to lookup the value in a property. If you assign to
 // a property of an object, that will apply directly to the object regardless of where that object is prototype linked to.
 // TIP:
-Object.create(null);
+const standAlone = Object.create(null);
+console.log(standAlone);
 // creates an object that is not prototype linked anywhere, so it's purely just a standalone
 // object; in some circumstances, that may be preferable.
+
 // Consider:
 
 console.log(mathHomework.topic); // JS
@@ -336,11 +342,11 @@ anotherHomework.topic = "Node.js"; // Changing the anotheHomework.topic
 console.log(anotherHomework.topic); // Node.js
 console.log(mathHomework.topic); // JS not Node.js !
 
-// The assignment to topic creates a property of that name directly on otherHomework ; there's no effect on the
+// The assignment to topic creates a property of that name directly on anotherHomework ; there's no effect on the
 // topic property on homework . The next statement then accesses otherHomework.topic , and we see the
-// non-delegated answer from that new property: "Math" .
+// non-delegated answer from that new property: "Node.js" .
 
-// ** Lets not confuse the Object.create() with short hands of it like below
+// ** Lets not confuse the Object.create() with short hands like below
 const newGame = game;
 // The above will grab the game Object from same reference identity so if we change anything in new game means it will change in game itself too
 // The reason is because we are not re-creating the newGame object from game but we are referencing to the same identity
@@ -355,3 +361,39 @@ console.log(game.name); // PUBG
 // Another frankly more convoluted but perhaps still more common way of creating an object with a prototype
 // linkage is using the "prototypal class" pattern, from before class (see Chapter 2, "Classes") was added in ES6.
 // We'll cover this topic in more detail in Appendix A, "Prototypal 'Classes'".
+
+// ****** this Revisited
+
+// We covered the this keyword earlier, but its true importance shines when considering how it powers prototypedelegated
+// function calls. Indeed, one of the main reasons this supports dynamic context based on how the
+// function is called is so that method calls on objects which delegate through the prototype chain still maintain the
+// expected this .
+// Consider:
+var homework2 = {
+  study() {
+    console.log(`Please study ${this.topic}`);
+  },
+};
+var jsHomework = Object.create(homework2);
+jsHomework.topic = "JS";
+jsHomework.study();
+// Please study JS
+
+var mathHomework = Object.create(homework2);
+mathHomework.topic = "Math";
+mathHomework.study();
+// Please study Math
+
+// The two objects jsHomework and mathHomework each prototype link to the single homework object, which
+// has the study() function. jsHomework and mathHomework are each given their own topic property
+
+// jsHomework.study() delegates to homework.study() , but its this ( this.topic ) for that execution
+// resolves to jsHomework because of how the function is called, so this.topic is "JS" . Similarly for
+// mathHomework.study() delegating to homework.study() but still resolving this to mathHomework , and
+// thus this.topic as "Math" .
+
+// The preceding code snippet would be far less useful if this was resolved to homework . Yet, in many other
+// languages, it would seem this would be homework because the study() method is indeed defined on
+// homework .
+// Unlike many other languages, JS's this being dynamic is a critical component of allowing prototype delegation,
+// and indeed class , to work as expected!
