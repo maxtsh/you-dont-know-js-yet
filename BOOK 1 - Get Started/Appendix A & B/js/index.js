@@ -1,14 +1,54 @@
+// Apendix A
+
+// Values vs. References
+// In Chapter 2, we introduced the two main types of values: primitives and objects. But we didn't discuss yet one key
+// difference between the two: how these values are assigned and passed around.
+// In many languages, the developer can choose between assigning/passing a value as the value itself, or as a
+// reference to the value. In JS, however, this decision is entirely determined by the kind of value. That surprises a lot
+// of developers from other languages when they start using JS.
+// If you assign/pass a value itself, the value is copied. For example:
+
+var myName = "Kyle";
+var yourName = myName;
+// Here, the yourName variable has a separate copy of the "Kyle" string from the value that's stored in myName .
+// That's because the value is a primitive, and primitive values are always assigned/passed as value copies.
+// Here's how you can prove there's two separate values involved:
+var myName = "Kyle";
+var yourName = myName;
+myName = "Frank";
+console.log(myName);
+// Frank
+console.log(yourName);
+// Kyle
+
+// See how yourName wasn't affected by the re-assignment of myName to "Frank" ? That's because each
+// variable holds its own copy of the value.
+// By contrast, references are the idea that two or more variables are pointing at the same value, such that modifying
+// this shared value would be reflected by an access via any of those references. In JS, only object values (arrays,
+// objects, functions, etc.) are treated as references.
+// Consider:
+
 const myAdress = {
   country: "Iran",
   city: "Tehran",
 };
 
-// Objects declared with const their value can be changed afterwards in code
+// Objects declared with const their value can be changed afterwards in code but they can't be re-assigned again like let
 const yourAddress = myAdress;
 myAdress.country = "Isfahan";
 console.log(myAdress.country);
 console.log(yourAddress.country);
+
+// Because the value assigned to myAddress is an object, it's held/assigned by reference, and thus the assignment
+// to the yourAddress variable is a copy of the reference, not the object value itself. That's why the updated value
+// assigned to the myAddress.country is reflected when we access yourAddress.country . myAddress and
+// yourAddress have copies of the reference to the single shared object, so an update to one is an update to both.
+
+// Again, JS chooses the value-copy vs. reference-copy behavior based on the value type. Primitives are held by value,
+// objects are held by reference. There's no way to override this in JS, in either direction.
 // ====================================================
+
+// **** So Many Function Forms
 
 // Function inferred names which are anonymous and identifier names
 const giveMoney = function () {
@@ -110,7 +150,10 @@ MathClass.welcome();
 // Classroom.prototype object.
 
 console.log("===================================================");
-// ============================================================================
+// ====================================================================================================================
+
+// Appendix B
+
 // Practice 1#
 const dayStart = "07:30"; // Start of the working day
 const dayEnd = "17:45"; // End of the working day
