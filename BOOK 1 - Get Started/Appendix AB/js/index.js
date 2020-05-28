@@ -56,17 +56,76 @@ const giveMoney = function () {
   return true;
 };
 
-function getMoney() {
+// The function expression here is referred to as an anonymous function expression, since it has no name identifier
+// between the function keyword and the (..) parameter list. This point confuses many JS developers because
+// as of ES6, JS performs a "name inference" on an anonymous function:
+giveMoney.name;
+// "awesomeFunction"
+// The name property of a function will reveal either its directly given name (in the case of a declaration) or its
+// inferred name in the case of an anonymous function expression. That value is generally used by developer tools
+// when inspecting a function value or when reporting an error stack trace.
+
+// So even an anonymous function expression might get a name. However, name inference only happens in limited
+// cases such as when the function expression is assigned (with = ). If you pass a function expression as an
+// argument to a function call, for example, no name inference occurs; the name property will be an empty string, and
+// the developer console will usually report "(anonymous function)".
+// Even if a name is inferred, it's still an anonymous function. Why? Because the inferred name is a metadata string
+// value, not an available identifier to refer to the function. An anonymous function doesn't have an identifier to use to
+// refer to itself from inside itself—for recursion, event unbinding, etc.
+
+// Compare the anonymous function expression form to:
+// let awesomeFunction = ..
+// const awesomeFunction = ..
+var someFunc = function getMoney() {
   // Identifier name => cognitive
   return null;
-}
+};
 console.log(giveMoney.name, giveMoney());
-console.log(getMoney.name, getMoney());
+console.log(someFunc.name, someFunc());
+
+// This function expression is a named function expression, since the identifier someName is directly associated with
+// the function expression at compile time; the association with the identifier awesomeFunction still doesn't
+// happen until runtime at the time of that statement. Those two identifiers don't have to match; sometimes it makes
+// sense to have them be different, other times it's better to have them be the same.
+// Notice also that the explicit function name, the identifier someName , takes precedence when assigning a name for
+// the name property.
+// Should function expressions be named or anonymous? Opinions vary widely on this. Most developers tend to be
+// unconcerned with using anonymous functions. They're shorter, and unquestionably more common in the broad
+// sphere of JS code out there.
+// In my opinion, if a function exists in your program, it has a purpose; otherwise, take it out! And if it has a purpose, it
+// has a natural name that describes that purpose.
+
+// If a function has a name, you the code author should include that name in the code, so that the reader does not
+// have to infer that name from reading and mentally executing that function's source code. Even a trivial function
+// body like x * 2 has to be read to infer a name like "double" or "multBy2"; that brief extra mental work is
+// unnecessary when you could just take a second to name the function "double" or "multBy2" once, saving the reader
+// that repeated mental work every time it's read in the future.
+// There are, regrettably in some respects, many other function definition forms in JS as of early 2020 (maybe more in
+// the future!).
+// Here are some more declaration forms:
+
+// generator function declaration
+function* two() {}
+
+// async function declaration
+async function three() {}
+
+// async generator function declaration
+async function* four() {}
+
+// named function export declaration (ES6 modules)
+// export function five() {}
+
+// And here are some more of the (many!) function expression forms:
 
 // IIFE function declaration
 (function show() {
   console.log("SHOW");
 })();
+
+// asynchronous IIFE
+(async function () {})();
+(async function namedAIIFE() {})();
 
 // Arrow function declarations
 // 1#
@@ -83,6 +142,24 @@ console.log(power3(3));
 // 3#
 const power4 = (x) => ({ x: Math.pow(x, 4) });
 console.log(power4(5).x);
+
+// Examples
+var f1 = () => 42;
+var f2 = (x) => x * 2;
+var f3 = (x) => x * 2;
+var f4 = (x, y) => x * y;
+var f5 = (x) => ({ x: x * 2 });
+var f6 = (x) => {
+  return x * 2;
+};
+const f7 = async (x) => {
+  function calc(input) {
+    return input + 1;
+  }
+  var y = await calc(x);
+  return y * 2;
+};
+console.log(f7((x) => x * 2));
 
 // Arrow functions are syntactically anonymous, meaning the syntax doesn't provide a
 // way to provide a direct name identifier for the function.
@@ -136,6 +213,11 @@ function ClassRoom() {}
 ClassRoom.prototype.welcome = function hello() {
   console.log("WELCOME STUDENTS");
 };
+
+// All functions by default reference an empty object at a property named prototype . Despite the confusing
+// naming, this is not the function's prototype (where the function is prototype linked to), but rather the prototype
+// object to link to when other objects are created by calling the function with new
+
 // ** new ClassRoom creates a new Object and prototype links it to the existing ClassRoom prototype object meaning that MathClass has now access to all the prototype properties of ClassRoom;
 const MathClass = new ClassRoom();
 MathClass.welcome();
@@ -148,6 +230,29 @@ MathClass.welcome();
 // function.
 // Then new Classroom() creates a new object (assigned to mathClass ), and prototype links it to the existing
 // Classroom.prototype object.
+
+class Save {
+  constructor(name) {
+    this.name = name;
+  }
+
+  showName() {
+    console.log(this.name); // ES6 + Methods
+  }
+}
+
+const sv = new Save("Max");
+
+Save.prototype.showFullName = function () {
+  // Before ES6 Prototypal functions
+  console.log(`Fullname: ${this.name}`);
+};
+
+sv.showFullName("Jonas");
+
+console.log(Save.prototype);
+
+// ***So Each class and function has their own prototype object which is empty at first and we can add stuff to it for example more functions or methods
 
 console.log("===================================================");
 // ====================================================================================================================
