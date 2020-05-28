@@ -311,6 +311,50 @@ console.log(scheduleMeeting("16:00", 121));
 console.log(scheduleMeeting("16:10", 110));
 console.log(scheduleMeeting("07:30", 626));
 
+// This below one is cleaner and also fixed inputs like "7:30" for it
+const dayStart2 = "07:30";
+const dayEnd2 = "17:45";
+function scheduleMeeting2(start, duration) {
+  if (typeof start !== "string") return "No string input for start time";
+  if (typeof duration !== "number") return "No number input for duration";
+
+  const startOfMeetingHour = Number(start.split(":")[0]);
+  const startOfMeetingMinute = Number(start.split(":")[1]);
+
+  const durationHour = Math.floor(duration / 60);
+  const durationMinute = duration % 60;
+
+  let endOfMeetingHour = startOfMeetingHour + durationHour;
+  let endOfMeetingMinute = startOfMeetingMinute + durationMinute;
+
+  if (startOfMeetingMinute + durationMinute >= 60) {
+    endOfMeetingHour++;
+    endOfMeetingMinute - 60;
+  }
+
+  const startTime = `${startOfMeetingHour
+    .toString()
+    .padStart(2, 0)}:${startOfMeetingMinute.toString().padStart(2, 0)}`;
+
+  const endTime = `${endOfMeetingHour
+    .toString()
+    .padStart(2, 0)}:${endOfMeetingMinute.toString().padStart(2, 0)}`;
+
+  console.log(`Start:${startTime} End:${endTime}`);
+
+  return dayEnd2 >= endTime && startTime >= dayStart2;
+}
+
+console.log(scheduleMeeting2("7:00", 15)); // false
+console.log(scheduleMeeting2("07:15", 28)); // false
+console.log(scheduleMeeting2("7:30", 30)); // true
+console.log(scheduleMeeting2("11:30", 60)); // true
+console.log(scheduleMeeting2("17:00", 45)); // true
+console.log(scheduleMeeting2("17:30", 30)); // false
+console.log(scheduleMeeting2("18:00", 15)); // false
+console.log(scheduleMeeting2("18:00", 110)); // false
+console.log(scheduleMeeting2("17:44", 1)); // false
+
 console.log("===================================================");
 // ============================================================================
 // Practice 2#
