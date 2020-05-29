@@ -428,3 +428,46 @@ var slotMachine = {
     return lines.join("\n");
   },
 };
+
+// Practice Extra #4
+// Computing Two Diagonals of a n * n Matrix
+
+function diagonalDifference(n, ...rest) {
+  if (n !== rest.length) return "The Matrix size is not compatible";
+
+  let arr = {
+    diagonal1Arr: [],
+    diagonal2Arr: [],
+  };
+
+  for (let x = 0; x <= n; x++) {
+    for (let y = 0; y <= n; y++) {
+      if ((x = y)) {
+        arr.diagonal1Arr.push(rest[x - 1][y - 1]);
+      }
+    }
+  }
+
+  for (let a = 1, b = n; a <= n; a++, b--) {
+    arr.diagonal2Arr.push(rest[a - 1][b - 1]);
+  }
+
+  const sumDiagonal1 = arr.diagonal1Arr.reduce((total, item) => total + item);
+  const sumDiagonal2 = arr.diagonal2Arr.reduce((total, item) => total + item);
+  const absDifference = Math.abs(sumDiagonal1 - sumDiagonal2);
+
+  return { arr, sumDiagonal1, sumDiagonal2, absDifference };
+}
+
+console.log(diagonalDifference(3, [1, 2, 3], [4, 5, 6], [7, 8, 9])); // 0
+console.log(diagonalDifference(3, [11, 2, 4], [4, 5, 6], [10, 8, -12])); // 15
+console.log(diagonalDifference(2, [1, 2], [3, 4])); //0
+console.log(
+  diagonalDifference(
+    4,
+    [1, 2, 3, 4],
+    [5, 6, 7, 8],
+    [9, 10, 11, 12],
+    [13, 14, 15, 16]
+  )
+); //0
