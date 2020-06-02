@@ -104,3 +104,161 @@ console.log(studentName);
 // Before you move on, take some time to analyze this code using the various techniques/metaphors we've
 // covered in the book. In particular, make sure to identify the marble/bubble colors in this snippet. It's good
 // practice!
+
+// The studentName variable on line 1 (the var studentName = .. statement) creates a RED marble. The
+// same named variable is declared as a BLUE marble on line 3, the parameter in the printStudent(..) function
+// definition.
+
+// So the question is, what color marble is being referenced in the studentName =
+// studentName.toUpperCase() statement, and indeed the next statement, console.log(studentName) ? All
+// 3 studentName references here will be BLUE. Why?
+// With the conceptual notion of the "lookup", we asserted that it starts with the current scope and works its way
+// outward/upward, stopping as soon as a matching variable is found. The BLUE studentName is found right away.
+// The RED studentName is never even considered.
+// This is a key component of lexical scope behavior, called shadowing. The BLUE studentName variable
+// (parameter) shadows the RED studentName . So, the parameter shadows (or is shadowing) the shadowed global
+// variable. Repeat that sentence to yourself a few times to make sure you have the terminology straight!
+// That's why the re-assignment of studentName affects only the inner (parameter) variable, the BLUE
+// studentName , not the global RED studentName .
+
+// When you choose to shadow a variable from an outer scope, one direct impact is that from that scope
+// inward/downward (through any nested scopes), it's now impossible for any marble to be colored as the shadowed
+// variable (RED, in this case). In other words, any studentName identifier reference will mean that parameter
+// variable, never the global studentName variable. It's lexically impossible to reference the global studentName
+// anywhere inside of the printStudent(..) function (or any inner scopes it may contain).
+
+// Global Unshadowing Trick
+// It is still possible to access a global variable, but not through a typical lexical identifier reference.
+// In the global scope (RED), var declarations and function -declarations also expose themselves as properties
+// (of the same name as the identifier) on the global object -- essentially an object representation of the global scope.
+// If you've done JS coding in a browser environment, you probably identify the global object as window . That's not
+// entirely accurate, but it's good enough for us to use in discussion for now. In a bit, we'll explore the global
+// scope/object topic more.
+
+// Consider this program, specifically executed as a standalone .js file in a browser environment:
+var studentName = "Suzy";
+function printStudent(studentName) {
+  console.log(studentName);
+  console.log(window.studentName);
+}
+printStudent("Frank");
+// "Frank"
+// "Suzy"
+
+// Notice the window.studentName reference? This expression is accessing the global variable studentName as
+// a property on window (which we're pretending for now is synonymous with the global object). That's the only way
+// to access a shadowed variable from inside the scope where the shadowing variable is present.
+
+// ***** WARNING:
+// Leveraging this technique is not very good practice, as it's limited in utility, confusing for readers of your code,
+// and likely to invite bugs to your program. Don't shadow a global variable that you need to access, and
+// conversely, don't access a global variable that you've shadowed.
+
+// The window.studentName is a mirror of the global studentName variable, not a snapshot copy. Changes to
+// one are reflected in the other, in either direction. Think of window.studentName as a getter/setter that accesses
+// the actual studentName variable. As a matter of fact, you can even add a variable to the global scope by
+// creating/setting a property on the global object ( window ).
+
+// This little "trick" only works for accessing a global scope variable (that was declared with var or function ).
+// Other forms of global scope variable declarations do not create mirrored global object properties:
+
+var one = 1;
+let notOne = 2;
+const notTwo = 3;
+class notThree {}
+console.log(window.one); // 1
+console.log(window.notOne); // undefined
+console.log(window.notTwo); // undefined
+console.log(window.notThree); // undefined
+
+// Variables (no matter how they're declared!) that exist in any other scope than the global scope are completely
+// inaccessible from an inner scope where they've been shadowed.
+
+var special = 42;
+function lookingFor(special) {
+  // `special` in this scope is inaccessible from
+  // inside keepLooking()
+  function keepLooking() {
+    var special = 3.141592;
+    console.log(special);
+    console.log(window.special);
+  }
+  keepLooking();
+}
+lookingFor(112358132134);
+// 3.141592
+// 42
+
+// The global RED special is shadowed by the BLUE special (parameter), and the BLUE special is itself
+// shadowed by the GREEN special inside keepLooking() . We can still access RED special indirectly as
+// window.special .
+
+// Copying Is Not Accessing
+// I've been asked the following "But what about...?" question dozens of times, so I'm just going to address it before
+// you even ask!
+
+var special = 42;
+function lookingFor(special) {
+  var another = {
+    special: special,
+  };
+  function keepLooking() {
+    var special = 3.141592;
+    console.log(special);
+    console.log(another.special); // Ooo, tricky!
+    console.log(window.special);
+  }
+  keepLooking();
+}
+lookingFor(112358132134);
+// 3.141592
+// 112358132134
+// 42
+
+// Oh! So does this another technique prove me wrong in my above claim of the special parameter being
+// "completely inaccessible" from inside keepLooking() ? No, it does not.
+// special: special is copying the value of the special parameter variable into another container (a property
+// of the same name). Of course if you put a value in another container, shadowing no longer applies (unless
+// another was shadowed, too!). But that doesn't mean we're accessing the parameter special , it means we're
+// accessing the value it had at that moment, but by way of another container (object property). We cannot, for
+// example, reassign that BLUE special to another value from inside keepLooking() .
+
+// Another "But...!?" you may be about to raise: what if I'd used objects or arrays as the values instead of the numbers
+// ( 112358132134 , etc)? Would us having references to objects instead of copies of primitive values "fix" the
+// inaccessibility? No. Mutating the contents of the object value via such a reference copy is not the same thing as
+// lexically accessing the variable itself. We still couldn't reassign the BLUE special .
+
+// ***** Illegal Shadowing
+// Not all combinations of declaration shadowing are allowed. One case to be aware of is that let can shadow
+// var , but var cannot shadow let .
+// Consider:
+function something() {
+  var special = "JavaScript";
+  {
+    let special = 42; // totally fine shadowing
+    // ..
+  }
+}
+function another() {
+  // ..
+  {
+    let special = "JavaScript";
+    {
+      // var special = "JavaScript"; // Syntax Error
+      // ..
+    }
+  }
+}
+
+// The boundary crossing effectively stops at each function boundary, so this variant raises no exception:
+function another() {
+  // ..
+  {
+    let special = "JavaScript";
+    whatever(function callback() {
+      var special = "JavaScript"; // totally fine shadowing
+      // ..
+    });
+  }
+}
+// Just remember: let can shadow var , but not the other way around
