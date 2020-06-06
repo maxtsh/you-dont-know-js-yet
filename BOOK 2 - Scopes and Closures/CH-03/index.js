@@ -80,7 +80,8 @@ console.log(nextStudent);
 
 // NOTE:
 // Chapter 2 "Lookup Failures" covers what happens if a marble remains uncolored as its reference is executed.
-// Shadowing
+
+// *********** Shadowing
 // Our running example for these chapters uses different variable names across the scope boundaries. Since they all
 // have unique names, in a way it wouldn't matter if all of them were just in one bucket (like RED).
 // Where having different lexical scope buckets starts to matter more is when you have two or more variables, each in
@@ -106,15 +107,17 @@ console.log(studentName);
 // practice!
 
 // The studentName variable on line 1 (the var studentName = .. statement) creates a RED marble. The
-// same named variable is declared as a BLUE marble on line 3, the parameter in the printStudent(..) function
+// same named variable is declared as a BLUE marble , the parameter in the printStudent(..) function
 // definition.
 
 // So the question is, what color marble is being referenced in the studentName =
-// studentName.toUpperCase() statement, and indeed the next statement, console.log(studentName) ? All
-// 3 studentName references here will be BLUE. Why?
+// studentName.toUpperCase() statement, and indeed the next statement, console.log(studentName) ?
+
+// All 3 studentName references here will be BLUE. Why?
 // With the conceptual notion of the "lookup", we asserted that it starts with the current scope and works its way
 // outward/upward, stopping as soon as a matching variable is found. The BLUE studentName is found right away.
 // The RED studentName is never even considered.
+
 // This is a key component of lexical scope behavior, called shadowing. The BLUE studentName variable
 // (parameter) shadows the RED studentName . So, the parameter shadows (or is shadowing) the shadowed global
 // variable. Repeat that sentence to yourself a few times to make sure you have the terminology straight!
@@ -127,7 +130,7 @@ console.log(studentName);
 // variable, never the global studentName variable. It's lexically impossible to reference the global studentName
 // anywhere inside of the printStudent(..) function (or any inner scopes it may contain).
 
-// Global Unshadowing Trick
+// **** Global Unshadowing Trick
 // It is still possible to access a global variable, but not through a typical lexical identifier reference.
 // In the global scope (RED), var declarations and function -declarations also expose themselves as properties
 // (of the same name as the identifier) on the global object -- essentially an object representation of the global scope.
@@ -149,7 +152,7 @@ printStudent("Frank");
 // a property on window (which we're pretending for now is synonymous with the global object). That's the only way
 // to access a shadowed variable from inside the scope where the shadowing variable is present.
 
-// ***** WARNING:
+// ******* WARNING:
 // Leveraging this technique is not very good practice, as it's limited in utility, confusing for readers of your code,
 // and likely to invite bugs to your program. Don't shadow a global variable that you need to access, and
 // conversely, don't access a global variable that you've shadowed.
@@ -193,7 +196,7 @@ lookingFor(112358132134);
 // shadowed by the GREEN special inside keepLooking() . We can still access RED special indirectly as
 // window.special .
 
-// Copying Is Not Accessing
+// ****** Copying Is Not Accessing
 // I've been asked the following "But what about...?" question dozens of times, so I'm just going to address it before
 // you even ask!
 
@@ -202,6 +205,7 @@ function lookingFor(special) {
   var another = {
     special: special,
   };
+
   function keepLooking() {
     var special = 3.141592;
     console.log(special);
@@ -217,6 +221,7 @@ lookingFor(112358132134);
 
 // Oh! So does this another technique prove me wrong in my above claim of the special parameter being
 // "completely inaccessible" from inside keepLooking() ? No, it does not.
+
 // special: special is copying the value of the special parameter variable into another container (a property
 // of the same name). Of course if you put a value in another container, shadowing no longer applies (unless
 // another was shadowed, too!). But that doesn't mean we're accessing the parameter special , it means we're
@@ -262,3 +267,149 @@ function another() {
   }
 }
 // Just remember: let can shadow var , but not the other way around
+
+// ****** Function Name Scope
+// As you're probably aware, a function declaration looks like this:
+
+function askQuestion() {
+  // ..
+}
+
+// And as discussed in Chapter 1 and 2, such a function declaration will create a variable in the enclosing scope
+// (in this case, the global scope) named askQuestion .
+// What about this program?
+
+var askQuestion = function () {
+  // ..
+};
+
+// The same thing is true with respect to the variable askQuestion being created. But since we have a function
+// expression -- a function definition used as value instead of as a declaration -- this function definition will not "hoist"
+// (covered later in this chapter).
+
+// But hoisting is only one difference between function declarations and function expressions. The other major
+// difference is what happens to the name identifier on the function.
+
+// Consider the assignment of a named function expression:
+var askQuestion = function ofTheTeacher() {
+  // ..
+};
+
+// We know askQuestion ends up in the outer scope. But what about the ofTheTeacher identifier? For
+// function declarations, the name identifier ends up in the outer/enclosing scope, so it would seem reasonable to
+// assume that's the case here. But it's not.
+// ofTheTeacher is declared as a variable inside the function itself:
+
+var askQuestion = function ofTheTeacher() {
+  console.log(ofTheTeacher);
+};
+askQuestion();
+// function ofTheTeacher()...
+// console.log(ofTheTeacher);
+// ReferenceError: 'ofTheTeacher' is not defined
+
+// Not only is ofTheTeacher declared inside the function rather than outside, but it's also created as read-only:
+
+var askQuestion = function ofTheTeacher() {
+  "use strict";
+  // ofTheTeacher = 42; // this assignment fails
+  //..
+};
+askQuestion();
+// TypeError
+
+// Because we used strict mode, the assignment failure is reported as a Type Error; in non-strict mode, such an
+// assignment fails silently with no exception.
+// What about when a function expression has no name identifier?
+
+var askQuestion = function () {
+  // ..
+};
+
+// A function expression with a name identifier is referred to as a "named function expression", and one without a
+// name identifier is referred to as an "anonymous function expression". Anonymous function expressions have no
+// name identifier, and so have no effect on either the outer/enclosing scope or their own.
+
+// NOTE:
+// We'll discuss named vs. anonymous function expressions in much more detail, including what factors affect
+// the decision to use one or the other, in Appendix A.
+
+// ******* Arrow Functions
+// ES6 added an additional function expression form, called "arrow functions":
+var askQuestion = () => {
+  // ..
+};
+// The => arrow function doesn't require the word function to define it. Also, the ( .. ) around the parameter
+// list is optional in some simple cases. Likewise, the { .. } around the function body is optional in some simple
+// cases. And when the { .. } are omitted, a return value is computed without using a return keyword.
+
+// NOTE:
+// The attractiveness of => arrow functions is often sold as "shorter syntax", and that's claimed to equate to
+// objectively more readable functions. This claim is dubious at best, and outright misguided in general. We'll dig
+// into the "readability" of function forms in Appendix A.
+// Arrow functions are lexically anonymous, meaning they have no directly related identifier that references the
+// function. The assignment to askQuestion creates an inferred name of "askQuestion", but that's not the same
+// thing as being non-anonymous:
+var askQuestion = () => {
+  // ..
+};
+console.log(askQuestion.name); // askQuestion
+
+// Arrow functions achieve their syntactic brevity at the expense of having to mentally juggle a bunch of variations for
+// different forms/conditions. Just a few for example:
+
+(id) => id.toUpperCase();
+
+const arrf2 = (id, name) => ({ id, name });
+
+const arrf3 = (...args) => {
+  return args[args.length - 1];
+};
+
+// See page 99... here prettier is changing the form of the above functions
+
+// The real reason I bring up arrow functions is because of the common but incorrect claim that arrow functions
+// somehow behave differently with respect to lexical scope from standard function functions.
+// This is incorrect.
+
+// Other than being anonymous (and having no declarative form), arrow functions have the same rules with respect to
+// lexical scope as function functions do. An arrow function, with or without { .. } around its body, still creates
+// a separate, inner nested bucket of scope. Variable declarations inside this nested scope bucket behave the same
+// as in function functions.
+
+// ***** Why Global Scope?
+// We've referenced the "global scope" a number of times already, but we should dig into that topic in more detail.
+// We'll start by exploring whether the global scope is (still) useful and relevant to writing JS programs, and then look
+// at differences in how the global scope is found in different JS environments.
+
+// It's likely no surprise to readers that most applications are composed of multiple (sometimes many!) individual JS
+// files. So how exactly do all those separate files get stitched together in a single run-time context by the JS engine?
+// With respect to browser-executed applications, there are 3 main ways:
+
+// 1. If you're exclusively using ES modules (not transpiling those into some other module-bundle format), then
+// these files are loaded individually by the JS environment. Each module then import s references to
+// whichever other modules it needs to access. The separate module files cooperate with each other
+// exclusively through these shared imports, without needing any scopes.
+
+// 2. If you're using a bundler in your build process, all the files are typically concatenated together before delivery
+// to the browser and JS engine, which then only processes one big file. Even with all the pieces of the
+// application being co-located in a single file, some mechanism is necessary for each piece to register a name
+// to be referred to by other pieces, as well as some facility for that access to be made.
+
+// In some approaches, the entire contents of the file are wrapped in a single enclosing scope (such as a
+// wrapper function, UMD-like module, etc), so each piece can register itself for access by other pieces by way
+// of local variables in that shared scope.
+
+// For example:
+(function outerScope() {
+  var moduleOne = (function one() {
+    // ..
+  })();
+  var moduleTwo = (function two() {
+    // ..
+    function callModuleOne() {
+      moduleOne.someMethod();
+    }
+    // ..
+  })();
+})();
