@@ -413,3 +413,196 @@ const arrf3 = (...args) => {
     // ..
   })();
 })();
+
+// As shown, the moduleOne and moduleTwo local variables inside the outerScope() function scope are
+// declared so that these modules can access each other for their cooperation.
+
+// While the scope of outerScope() is a function and not the full environment global scope, it does act as a
+// sort of "application-wide scope", a bucket where all the top-level identifiers can be stored, even if not in the
+// real global scope. So it's kind of like a stand-in for the global scope in that respect.
+
+// 3. Whether a bundler is used for an application, or whether the (non-ES module) files are simply loaded in the
+// browser individually (via <script> tags or other dynamic JS loading), if there is no single surrounding
+// scope encompassing all these pieces, the global scope is the only way for them to cooperate with each
+// other.
+
+// A bundled file of this sort often looks something like this:
+
+var moduleOne = (function one() {
+  // ..
+})();
+var moduleTwo = (function two() {
+  // ..
+  function callModuleOne() {
+    moduleOne.someMethod();
+  }
+  // ..
+})();
+// Here, since there is no surrounding function scope, these moduleOne and moduleTwo declarations are
+// simply processed in the global scope. This is effectively the same as if the file hadn't been concatenated:
+
+// module1.js:
+var moduleOne = (function one() {
+  // ..
+})();
+
+// module2.js:
+var moduleTwo = (function two() {
+  // ..
+  function callModuleOne() {
+    moduleOne.someMethod();
+  }
+  // ..
+})();
+
+// Again, if these files are loaded as normal standalone .js files in a browser environment, each top-level
+// variable declaration will end up as a global variable, since the global scope is the only shared resource
+// between these two separate files (programs, from the perspective of the JS engine).
+
+// In addition to (potentially) accounting for where an application's code resides during run-time, and how each piece
+// is able to access the other pieces to cooperate, the global scope is also where:
+
+// *JS exposes its built-ins:
+// primitives: undefined , null , Infinity , NaN
+// natives: Date() , Object() , String() , etc
+// global functions: eval() , parseInt() , etc
+// namespaces: Math , Atomics , JSON
+// friends of JS: Intl , WebAssembly
+
+// *The environment that is hosting JS exposes its built-ins:
+// console (and its methods)
+// the DOM ( window , document , etc)
+// timers ( setTimeout(..) , etc)
+// web platform APIs: navigator , history , geolocation, WebRTC, etc
+
+// *NOTE:
+// Node also exposes several elements "globally", but they're technically not in its global scope:
+// require() , __dirname , module , URL , etc.
+
+// Most developers agree that the global scope shouldn't just be a dumping ground for every variable in your
+// application. That's a mess of bugs just waiting to happen. But it's also undeniable that the global scope is an
+// important glue for virtually every JS application.
+
+// ****** Where Exactly Is This Global Scope?
+
+// It might seem obvious that the global scope is located in the outermost portion of a file; that is, not inside any
+// function or other block. But it's not quite as simple as that.
+// Different JS environments handle the scopes of your programs, in particular the global scope, differently. It's
+// extremely common for JS developers to have misconceptions in this regard.
+
+// **** Browser "Window"
+// With resepct to treatment of the global scope, the most pure (not completely!) environment JS can be run in is as a
+// standalone .js file loaded in a web page environment in a browser. I don't mean "pure" as in nothing automatically
+// added -- lots may be added! -- but rather in terms of minimal intrusion on the code or interference with its behavior.
+// Consider this simple .js file:
+
+var studentName = "Kyle";
+function hello() {
+  console.log(`Hello, ${studentName}!`);
+}
+hello();
+// Hello, Kyle!
+
+// This code may be loaded in a webpage environment using an inline <script> tag, a <script src=..> script
+// tag in the markup, or even a dynamically created <script> DOM element. In all three cases, the studentName
+// and hello identifiers are declared in the global scope.
+
+// That means if you access the global object (commonly, window in the browser), you'll find properties of those
+// same names there:
+
+var studentName = "Kyle";
+function hello() {
+  console.log(`Hello, ${window.studentName}!`);
+}
+
+window.hello();
+// Hello, Kyle!
+
+// That's the default behavior one would expect from a reading of the JS specification. That's what I mean by pure.
+// That won't always be true of other JS environments, and that's often surprising to JS developers.
+
+// **** Shadowing Revisited
+// Recall the discussion of shadowing from earlier? An unusual consequence of the difference between a global
+// variable and a global property of the same name is that a global object property can be shadowed by a global
+// variable:
+
+window.something4 = 42;
+let something4 = "Kyle";
+console.log(something4);
+// Kyle
+
+// The let declaration adds a something global variable, which shadows the something global object property.
+// While it's possible to shadow in this manner, it's almost certainly a bad idea to do so. Don't create a divergence
+// between the global object and the global scope.
+
+// ***** What's In A Name?
+// I asserted that this browser-hosted JS environment has the most pure global scope behavior we'll see. Things are
+// not entirely pure, however.
+
+// Consider:
+var name = 42;
+console.log(typeof name, name);
+// string 42
+
+// window.name is a pre-defined "global" in a browser context; it's a property on the global object, so it seems like a
+// normal global variable (though it's anything but "normal"). We used var for the declaration, which doesn't shadow
+// the pre-defined name global property. That means, effectively, the var declaration is ignored, since there's
+// already a global scope object property of that name. As we discussed in the previous section, had we use let
+// name , we would have shadowed window.name with a separate global name variable.
+
+// But the truly weird behavior is that even though we assigned the number 42 to name , when we then retrieve its
+// value, it's a string "42" ! In this case, the weirdness is because window.name is actually a getter/setter on the
+// global object, which insists on a string value. Wow!
+
+// With the exception some rare corner cases like window.name , JS running as a standalone file in a browser page
+// has some of the most pure global scope behavior we're likely to encounter.
+
+// ***** Web Workers
+// Web Workers are a web platform extension for typical browser-JS behavior, which allows a JS file to run in a
+// completely separate thread (operating system wise) from the thread that's running the main browser-hosted JS.
+
+// Since these web worker programs run on a separate thread, they're restricted in their communications with the
+// main application thread, to avoid/control race conditions and other complications. Web worker code does not have
+// access to the DOM, for example. Some web APIs are however made available to the worker, such as navigator .
+
+// Since a web worker is treated as a wholly separate program, it does not share the global scope with the main JS
+// program. However, the browser's JS engine is still running the code, so we can expect similar purity of its global
+// scope behavior. But there is no DOM access, so the window alias for the global scope doesn't exist.
+
+// In a web worker, a global object reference is typically made with self :
+
+var studentName = "Kyle";
+let studentID = 42;
+
+function hello() {
+  console.log(`Hello, ${self.studentName}!`);
+}
+self.hello();
+// Hello, Kyle!
+self.studentID;
+// undefined
+
+// Just as with main JS programs, var and function declarations create mirrored properties on the global object
+// (aka, self ), where other declarations ( let , etc) do not.
+// So again, the global scope behavior we're seeing here is about as pure as it gets for running JS programs.
+
+// **** Developer Tools Console/REPL
+// Recall from "Get Started" Chapter 1 that Developer Tools don't create a completely authentic JS environment. They
+// do process JS code, but they also bend the UX of the interaction in favor of being friendly to developers (aka,
+// "Developer Experience", DX).
+// In many cases, favoring DX when entering short JS snippets over the normal strict steps expected for processing a
+// full JS program produces observable differences in behavior of code. For example, certain error conditions
+// applicable to a JS program may be relaxed and not displayed when the code is entered into a developer tool.
+// With respect to our discussions here about scope, such observable differences in behavior may include the
+// behavior of the global scope, hoisting (discussed later in this chapter), and block-scoping declarators ( let /
+// const , see Chapter 4) when used in the outermost scope.
+
+// Even though while using the console/REPL it seems like statements entered in the outermost scope are being
+// processed in the real global scope, that's not strictly accurate. The tool emulates that to an extent, but it's
+// emulation, not strict adherence. These tool environments prioritize developer convenience, which means that at
+// times (such as with our current discussions regarding scope), observed behavior may deviate from the JS
+// specification.
+
+// The take-away is that Developer Tools, while being very convenient and useful for a variety of developer activities,
+// are not suitable environments to determine or verify some of the explicit and nuanced behaviors of an actual JS
+// program context.
