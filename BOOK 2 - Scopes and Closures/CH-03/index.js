@@ -977,3 +977,165 @@ console.log(studentName8);
 // Frank
 // studentName8 = "Suzy"; // TypeError
 // The studentName variable cannot be re-assigned because it's declared with a const .
+
+// WARNING:
+// The error thrown when re-assigning to studentName is a Type Error, not a Syntax Error. The subtle distinction
+// here is actually pretty important, but unfortunately far too easy to miss. Syntax Errors represent faults in the
+// program that stop it from even starting execution. Type Errors represent faults that arise during program
+// execution. In the above snippet, "Frank" is printed out before we process the re-assignment of studentName,
+// which then throws the error.
+
+// So if const declarations cannot be re-assigned, and const declarations always require assignments, then we
+// have a clear technical reason why const must disallow any "re-declarations":
+
+// const studentName = "Frank";
+// const studentName = "Suzy"; // obviously this must be an error
+// Since const "re-declaration" must be disallowed (on technical grounds), TC39 essentially felt that let "redeclaration"
+// should be disallowed as well.
+
+// ****** Very Important
+
+// ****** Loops
+
+// So it's clear from our previous discussion that JS doesn't really want us to "re-declare" our variables within the
+// same scope. That probably seems like a straightforward admonition, until you consider what it means repeated
+// execution of declaration statements in loops.
+// Consider:
+
+var keepGoing = true;
+while (keepGoing) {
+  let value = Math.random();
+  if (value > 0.5) {
+    keepGoing = false;
+  }
+}
+
+// Is value being "re-declared" repeatedly in this program? Will we get errors thrown?
+// No.
+
+// All the rules of scope (including "re-declaration" of let -created variables) are applied per scope instance. In other
+// words, each time a scope is entered during execution, everything resets.
+// Each loop iteration is its own new scope instance, and within each scope instance, value is only being declared
+// once. So there's no attempted "re-declaration", and thus no error.
+// Before we consider other loop forms, what if the value declaration in the previous snippet were changed to a
+// var ?
+
+var keepGoing = true;
+while (keepGoing) {
+  var value = Math.random();
+  if (value > 0.5) {
+    keepGoing = false;
+  }
+}
+
+// Is value being "re-declared" here, especially since we know var allows it? No. Because var is not treated as a
+// block-scoping declaration (see Chapter 4), it attaches itself to the global scope. So there's just one value , in the
+// same (global, in this case) scope as keepGoing . No "re-declaration"!
+
+// One way to keep this all straight is to remember that var , let , and const do not exist in the code by the time
+// it starts to execute. They're handled entirely by the compiler.
+
+// What about "re-declaration" with other loop forms, like for -loops?
+
+for (let i = 0; i < 3; i++) {
+  let value = i * 10; // this line with let is re-declared each time the loop runs so we don't re-assign the value but in each loop we have seprated declarations which has its own scope
+  console.log(`${i}: ${value}`);
+}
+// 0: 0
+// 1: 10
+// 2: 20
+
+// It should be clear that there's only one value declared per scope instance. But what about i ? Is it being "redeclared"?
+// To answer that, consider what scope i is in? It might seem like it would be in the outer (in this case, global)
+// scope, but it's not. It's in the scope of for -loop body, just like value is. In fact, you could sorta think about that
+// loop in this more verbose equivalent form:
+
+{
+  let $$i = 0; // a fictional variable for illustration
+  for (; $$i < 3; $$i++) {
+    let i = $$i; // here's our actual loop `i`!
+    let value = i * 10;
+    console.log(`${i}: ${value}`);
+  }
+  // 0: 0
+  // 1: 10
+  // 2: 20
+}
+
+// Now it should be clear: the illustrative $$i , as well as i and value variables, are all declared exactly once per
+// scope instance. No "re-declaration" here.
+// What about other for -loop forms?
+
+for (let index in students) {
+  // this is fine
+}
+for (let student of students) {
+  // so is this
+}
+
+// Same thing with for..in and for..of loops: the declared variable is treated as inside the loop body, and thus
+// is handled per iteration (aka, per scope instance). No "re-declaration".
+// OK, I know you're thinking that I sound like a broken record at this point. But let's explore how const impacts
+// these looping constructs.
+
+// Consider:
+var keepGoing = true;
+while (keepGoing) {
+  const value = Math.random(); // ooo, a shiny constant!
+  if (value > 0.5) {
+    keepGoing = false;
+  }
+}
+
+// Just like the let variant of this program we saw earlier, const is being run exactly once within each loop
+// iteration, so it's safe from "re-declaration" troubles. But things get more complicated when we talk about for -
+// loops.
+
+// for..in and for..of are fine to use with const :
+for (const index in students) {
+  // this is fine
+}
+for (const student of students) {
+  // this is also fine
+}
+
+// But not the general for -loop:
+// for (const i = 0; i < 3; i++) {
+// oops, this is going to fail
+// after the first iteration
+// }
+
+// What's wrong here? We could use let just fine in this construct, and we asserted that it creates a new i for
+// each loop iteration scope, so it doesn't even seem to be a "re-declaration".
+// Let's mentally "expand" that loop like we did earlier:
+
+{
+  // const $$i = 0; // a fictional variable for illustration
+  // for (; $$i < 3; $$i++) {
+  //   const i = $$i; // here's our actual loop `i`!
+  //   // ..
+  // }
+}
+
+// Do you spot the problem? Our i is indeed just created once inside the loop. That's not the problem. The problem
+// is the conceptual $$i that must be incremented each time with the $$i++ expression. That's re-assignment,
+// which isn't allowed for constants.
+// Remember, this "expanded" form is only a conceptual model to help you intuit the source of the problem. You might
+// wonder if JS could have made the const $$i = 0 instead into let $ii = 0 , which would then allow const
+// to work with our classic for -loop? It's possible, but then it would have been creating potentially surprising
+// exceptions to for -loop semantics.
+
+// In other words, it's a rather arbitrary (and likely confusing) nuanced exception to allow i++ in the for -loop
+// header to skirt strictness the const assignment, but not allow other re-assignments of i inside the loop
+// iteration, as is sometimes done. As such, the more straightforward answer is: const can't be used with the
+// classic for -loop form because of the re-assignment.
+
+// Interestingly, if you don't do re-assignment, then it's valid:
+// var keepGoing = true;
+for (const i = 0; keepGoing; ) {
+  keepGoing = Math.random() > 0.5;
+  // ..
+}
+
+// This is silly. There's no reason to declare i in that position with a const , since the whole point of such a
+// variable in that position is to be used for counting iterations. Just use a different loop form, like a while loop.
