@@ -606,3 +606,374 @@ self.studentID;
 // The take-away is that Developer Tools, while being very convenient and useful for a variety of developer activities,
 // are not suitable environments to determine or verify some of the explicit and nuanced behaviors of an actual JS
 // program context.
+
+// ******* ES Modules (ESM)
+// ES6 introduced first-class support for the module pattern (which we'll cover more in Chapter 6). One of the most
+// obvious impacts of using ESM is how it changes the behavior of observably top-level scope in a file.
+
+// Recall this code snippet from earlier:
+var studentName = "Kyle";
+function hello() {
+  console.log(`Hello, ${studentName}!`);
+}
+hello();
+// Hello, Kyle!
+// export hello;
+
+// If that code were in a file that was loaded as an ES module, it would still run exactly the same. However, the
+// observable effects, from the overall application perspective, would be different.
+// Despite being declared at the top-level of the (module) file, the outermost obvious scope, studentName and
+// hello are not global variables. Instead, they are module-wide, or if you prefer, "module-global". They are not
+// added to any global scope object, nor are they added to any accessible "module-global" object.
+// This is not to say that global variables cannot exist in such programs. It's just that global variables don't get created
+// by declaring variables in the top-level scope of a module.
+
+// The module's top-level scope is descended from the global scope, almost as if the entire contents of the module
+// were wrapped in a function. Thus, all variables that exist in the global scope (whether they're on the global object or
+// not!) are available as lexical identifiers from inside the module's scope.
+
+// ESM encourages a minimization of reliance on the global scope, where you import whatever modules you may need
+// for the current module to operate. As such, you less often see usage of the global scope or its global object.
+// However, as noted earlier, there are still plenty of JS and web globals that you will continue to access from the
+// global scope, whether you realize it or not!
+
+// ***** Node
+// As of time of this writing, Node recently added support for ES modules. But additionally, Node has from the
+// beginning supported a module format referred to as "Common JS", which looks like this:
+
+var studentName = "Kyle";
+function hello() {
+  console.log(`Hello, ${studentName}!`);
+}
+hello();
+// Hello, Kyle!
+// module.exports.hello = hello;
+
+// Node essentially wraps such code in a function, so that the var and function declarations are contained in
+// that module's scope, not treated as global variables.
+
+// function Module(module,require,__dirname,...) {
+//   var studentName = "Kyle";
+//   function hello() {
+//   console.log(`Hello, ${ studentName }!`);
+//   }
+//   hello();
+//   // Hello, Kyle!
+//   module.exports.hello = hello;
+//   }
+
+// Node then (again, essentially) invokes the Module(..) function to run your module. You can clearly see here why
+// studentName and hello identifiers are thus not global, but rather declared in the module scope.
+
+// As noted earlier, Node defines a number of "globals" like require() , but they're not actually identifiers in the
+// global scope. They're provided in the available scope to every module, essentially a bit like the parameters listed to
+// this Module(..) function above.
+
+// **** WARNING:
+// The part that often catches JS developers off-guard is that Node treats every single .js file that it loads,
+// including the main one you start the Node process with, as a module, so this wrapping always occurs! That
+// means that your main Node program file does not act (with respect to scope) like a .js file otherwise loaded as
+// the main program in a browser environment!
+
+// So how do you define actual global variables in Node? The only way to do so is to add properties to another of
+// Node's automatically provided "globals", which is called global . global is ostensibly (if not actually) a
+// reference to the real global scope object.
+// Consider:
+// global.studentName = "Kyle";
+// function hello() {
+// console.log(`Hello, ${ studentName }!`);
+// }
+// hello();
+// Hello, Kyle!
+// module.exports.hello = hello;
+
+// Here we add studentName as a property on the global object, and then in the console.log(..) statement
+// we're able to access studentName as a normal global variable.
+// Remember, global is not defined by JS, it's defined by Node.
+
+// ****** Global This
+// Reviewing where we've been so far, depending on which JS environment our code is running in, a program may or
+// may not be able to:
+// declare a global variable in the top-level scope with var or function declarations -- or let , const ,
+// and class .
+
+// also add global variables declarations as properties of the global scope object if var or function were
+// used for the declaration.
+
+// refer to the global scope object (for adding or retrieving global variables, as properties) with window ,
+// self , or global .
+
+// I think it's fair to say that global scope access and behavior is more complicated than most developers assume, as
+// the preceding sections have illustrated. But the complexity is never more obvious than in trying to articulate a
+// broadly applicable reference to the global scope object.
+
+// Another "trick" for getting a reliable reference to this global scope object might look like:
+const theGlobalScopeObject = new Function("return this")();
+
+// **** NOTE:
+// A function that is dynamically constructed with the Function() constructor will automatically be run in nonstrict
+// mode (for legacy reasons) when invoked as shown (the normal () function invocation); thus, its this will
+// be the global object. See Book 3 Objects & Classes for more information.
+
+// So, we have window , self , global , and this new Function(..) trick. That's a lot of different ways to try
+// to get at this global object.
+// Why not introduce yet another!?!?
+// At the time of this writing, JS recently introduced a standardized reference to the global scope object, called
+// globalThis . So, depending on the recency of the JS engines your code runs in, you can then use globalThis
+// in place of any of those other approaches.
+// You might even attempt a cross-environment approach that's safer across older JS environments preglobalThis
+// , something like:
+
+const theGlobalScopeObject2 =
+  typeof globalThis !== "undefined"
+    ? globalThis
+    : typeof global !== "undefined"
+    ? global
+    : typeof window !== "undefined"
+    ? window
+    : typeof self !== "undefined"
+    ? self
+    : new Function("return this")();
+
+// Phew! At least now you're more aware of the breadth of topic on the global scope and global scope object.
+
+// ***** When Can I Use A Variable?
+// At what point does a variable become available to use in a certain part of a program? There may seem to be an
+// obvious answer: after the variable has been declared/created. Right? Not quite.
+// Consider:
+
+greeting();
+// Hello!
+function greeting() {
+  console.log("Hello!");
+}
+
+// **** Very Important
+// This code works fine. You may have seen or even written code like it before. But did you ever wonder how or why it
+// works? Specifically, why can you access the identifier greeting from line 1 (to retrieve and execute a function
+// reference), even though the greeting() function declaration doesn't occur until line 3?
+
+// Recall how Chapter 1 pointed out that all identifiers are registered to their respective scopes during compile time.
+// Moreover, every identifier is created at the beginning of the scope it belongs to, every time that scope is entered.
+// The term most commonly used for making a variable available from the beginning of its enclosing scope, even
+// though its declaration may appear further down in the scope, is called hoisting.
+
+// But hoisting alone doesn't fully answer the posed question. Sure, we can see an identifier called greeting from
+// the beginning of the scope, but why can we call the greeting() function before it's been declared?
+// In other words, how does greeting have any value in it (the function reference), as soon as the scope first
+// begins? That's a special characteristic of function declarations, called function hoisting. When a function
+// declaration's name identifier is registered at the top of a scope, it is additionally initialized to that function's
+// reference.
+
+// Function hoisting only applies to formal function declarations (specifically those which appear outside of
+// blocks -- see "FiB" in Chapter 4), not to function expression assignments. Consider:
+
+// greeting2();
+// TypeError
+
+// var greeting2 = function greeting2() {
+//   console.log("Hello2!");
+// };
+
+// Line one ( greeting(); ) throws an error. But the kind of error thrown is very important to notice. A TypeError
+// means we're trying to do something with a value that is not allowed. Depending on your JS environment, the error
+// message would say something like, "'undefined' is not a function", or preferably, "'greeting' is not a function".
+
+// Notice that the error is not a ReferenceError . It's not telling us that it couldn't find greeting as an identifier
+// in the scope. It's telling us that greeting was found but doesn't hold a function reference at that moment. Only
+// functions can be invoked, so attempting to invoke some non-function value results in an error.
+// But what does greeting hold?
+
+// In addition to being hoisted, variables declared with var are also automatically initialized to undefined at the
+// beginning of the scope. Once they're initialized, they're available to be used (assigned to, retrieved from, etc)
+// throughout the whole scope.
+
+// So on that first line, greeting exists, but it holds only the default undefined value. It's not until line 3 that
+// greeting gets assigned the function reference.
+
+// Pay close attention to the distinction here. A function declaration is hoisted and initialized to its function value
+// (again, called function hoisting). A var variable is also hoisted, but it's only auto-initialized to undefined . Any
+// subsequent function expression assignments to that variable don't happen until that statement is reached
+// during run-time execution.
+
+// In both cases, the name of the identifier is hoisted. But the function value association doesn't get handled at
+// initialization time unless the identifier was created in a formal function declaration.
+
+// Let's look at another example of variable hoisting:
+greeting4 = "Hello4!";
+console.log(greeting4);
+// Hello!
+var greeting4 = "Howdy!";
+
+// Hoisting: Yet Another Metaphor
+// Chapter 2 was full of metaphors (to illustrate scope), but here we are faced with yet another: hoisting itself. Rather
+// than citing hoisting as a concrete execution step the JS engine performs, it's more useful as a visualization of
+// various actions JS takes in setting up the program before execution.
+
+// The typical assertion of what hoisting means is: lifting -- like lifting a heavy weight upward -- the identifiers all the
+// way to the top of a scope. The explanation often given is that the JS engine will rewrite that program before
+
+// execution, so that it looks more like this:
+
+var greeting; // hoisted declaration moved to the top
+greeting5 = "Hello5!"; // the original line 1
+console.log(greeting5);
+// Hello!
+greeting5 = "Howdy!"; // `var` is gone!
+
+// Though greeting isn't declared until line 4, it's available to be assigned to as early as line 1. Why? There's two
+// necessary parts to explain that: the identifier was hoisted, and it was automatically initialized to the value
+// undefined .
+
+// NOTE:
+// Variable hoisting of this sort probably feels unnatural, and many readers might rightly want to avoid it in their
+// programs. But should function hoisting also be avoided? We'll explore this in more detail in Appendix A.
+
+// The hoisting (metaphor) proposes that JS pre-processes the original program and re-arranges it slightly, so that all
+// the declarations have been moved to the top of their respective scopes, before execution. Moreover, the hoisting
+// metaphor asserts that function declarations are, in their entirety, hoisted to the top of each scope, as well.
+
+// Consider:
+
+studentName6 = "Suzy";
+greeting6();
+// Hello Suzy!
+
+function greeting6() {
+  console.log(`Hello ${studentName6}!`);
+}
+var studentName6;
+
+// The "rule" of the hoisting metaphor is that function declarations get hoisted first, then variables immediately after
+// all the functions. Thus, hoisting suggests that program is re-written by the JS engine to look like this:
+function greeting7() {
+  console.log(`Hello7 ${studentName7}!`);
+}
+var studentName7;
+studentName7 = "Suzy";
+greeting7();
+// Hello Suzy!
+
+// The hoisting metaphor is convenient. Its benefit is allowing us to hand wave over the magical look-ahead preprocessing
+// necessary to find all these declarations buried deep in scopes and somehow move (hoist) them to the
+// top; we can then think about the program as if it's executed by the JS engine in a single pass, top-down. Singlepass
+// seems more straightforward than Chapter 1's assertion of a 2-phase processing.
+
+// Hoisting as re-ordering code may be an attractive simplification, but it's not accurate. The JS engine doesn't
+// actually rewrite the code. It can't magically look-ahead and find declarations. The only way to accurately find them,
+// as well as all the scope boundaries in the program, would be to fully parse the code. Guess what parsing is? The
+// first phase of the 2-phase processing! There's no magical mental gymnastics that gets around that fact.
+
+// So if the hoisting metaphor is (at best) inaccurate, what should we do with the term? It's still useful -- indeed, even
+// members of TC39 regularly use it! -- but we shouldn't think of it as actual re-ordering of code.
+
+// WARNING:
+// Incorrect or incomplete mental models may seem sufficient because they can occasionally lead to accidental
+// right answers. But in the long run it's harder to accurately analyze and predict outcomes if your thinking isn't
+// particularly aligned with how the JS engine works.
+
+// I assert that hoisting should refer to the compile-time operation of generating run-time instructions for the
+// automatic registration of a variable at the beginning of its scope, each time that scope is entered.
+
+// ***** Important
+
+// ***** Re-declaration?
+// What do you think happens when variable is declared more than once in the same scope?
+// Consider:
+var studentName = "Frank";
+console.log(studentName);
+// Frank
+var studentName;
+console.log(studentName);
+// ???
+
+// What do you expect to be printed as that second message? Many believe the second var studentName has redeclared
+// the variable (and thus "reset" it), so they expect undefined to be printed.
+// But is there such a thing as a variable being "re-declared" in the same scope? No.
+// If you consider this program from the perspective of the hoisting metaphor, the code would be re-ordered like this
+// for execution purposes:
+
+var studentName;
+var studentName; // this is clearly a pointless no-op!
+studentName = "Frank";
+console.log(studentName);
+// Frank
+console.log(studentName);
+// Frank
+
+// Since hoisting is actually about registering a variable at the beginning of a scope, there's nothing to be done in the
+// middle of the scope where the original program actually had the second var studentName statement. It's just a
+// no-op(eration), a dead pointless statement.
+
+// TIP:
+// In our conversation-style from Chapter 2, Compiler would find the second var declaration statement and ask
+// the Scope Manager if it had already seen a studentName identifier; since it had, there wouldn't be anything else
+// to do.
+
+// It's also important to point out that var studentName; doesn't mean var studentName = undefined; , as
+// most people assume. Let's prove they're different by considering this variation of the program:
+
+var studentName = "Frank";
+console.log(studentName);
+// Frank
+var studentName = undefined; // let's add the initialization explicitly
+console.log(studentName);
+// undefined
+
+// See how the explicit = undefined initialization produces a different outcome than assuming it still happens
+// implicitly even if omitted? In the next section, we'll revisit this topic of initialization of variables from their
+// declarations.
+
+// So a repeated var declaration of the same identifier name in a scope is effectively a do-nothing statement. What
+// about repeating a declaration within a scope using let or const ?
+
+// let studentName = "Frank";
+console.log(studentName);
+// let studentName = "Suzy";
+
+// This program will not execute, but instead immediately throw a Syntax Error. Depending on your JS environment,
+// the error message will indicate something like: "Identifier 'studentName' has already been declared." In other words,
+// this is a case where attempted "re-declaration" is explicitly not allowed!
+
+// It's not just that two declarations involving let will throw this error. If either declaration uses let , the other can
+// be either let or var , and an error will still occur, as illustrated with these two variations:
+
+// var studentName = "Frank";
+// let studentName = "Suzy";
+
+// let studentName = "Frank";
+// var studentName = "Suzy";
+
+// In both cases, a Syntax Error is thrown on the second declaration. In other words, the only way to "re-declare" a
+// variable is to use var for all (two or more) of its declarations.
+
+// But why disallow it? The reason for the error is not technical per se, as var "re-declaration" has always been
+// allowed; clearly, the same allowance could have been made for let . But it's really more of a "social engineering"
+// issue. "Re-declaration" of variables is seen by some, including many on the TC39 body, as a bad habit that can lead
+// to program bugs.
+
+// So when ES6 introduced let , they decided to prevent "re-declaration" with an error. When Compiler asks Scope
+// Manager about a declaration, if that identifier has already been declared, and if either/both declarations were made
+// with let , an error is thrown. The intended signal to the developer is, "Stop relying on sloppy re-declaration!".
+
+// NOTE:
+// This is of course a stylistic opinion, not really a technical argument. Many developers agree with it, and that's
+// probably in part why TC39 included the error (as well as conforming to const). But a reasonable case could
+// have been made that staying consistent with var's precedent was more prudent, and that such opinionenforcement
+// was best left to opt-in tooling like linters. We'll explore whether var (and its associated behavior)
+// can still be useful in Appendix A.
+
+// ******** Constants?
+// The const keyword is a little more constrained than let . Like let , const cannot be repeated with the same
+// identifier in the same scope. But there's actually an overriding technical reason why that sort of "re-declaration" is
+// disallowed, unlike let which disallows "re-declaration" mostly for stylistic reasons.
+// The const keyword requires a variable to be initialized:
+
+// const empty; // SyntaxError
+
+// const declarations create variables that cannot be re-assigned:
+const studentName8 = "Frank";
+console.log(studentName8);
+// Frank
+// studentName8 = "Suzy"; // TypeError
+// The studentName variable cannot be re-assigned because it's declared with a const .
