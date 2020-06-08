@@ -811,11 +811,11 @@ var greeting4 = "Howdy!";
 // various actions JS takes in setting up the program before execution.
 
 // The typical assertion of what hoisting means is: lifting -- like lifting a heavy weight upward -- the identifiers all the
-// way to the top of a scope. The explanation often given is that the JS engine will rewrite that program before
+// way to the top of a scope. The explanation often given is that the JS engine will rewrite that program before.
 
 // execution, so that it looks more like this:
 
-var greeting; // hoisted declaration moved to the top
+var greeting5; // hoisted declaration moved to the top
 greeting5 = "Hello5!"; // the original line 1
 console.log(greeting5);
 // Hello!
@@ -1022,7 +1022,7 @@ while (keepGoing) {
 
 var keepGoing = true;
 while (keepGoing) {
-  var value = Math.random();
+  var value = Math.random(); // this value declared with var will attach itself to global object not the loop block scope
   if (value > 0.5) {
     keepGoing = false;
   }
@@ -1139,3 +1139,127 @@ for (const i = 0; keepGoing; ) {
 
 // This is silly. There's no reason to declare i in that position with a const , since the whole point of such a
 // variable in that position is to be used for counting iterations. Just use a different loop form, like a while loop.
+
+// ******* Uninitialized
+
+// With var declarations, the variable is "hoisted" to the top of its scope. But it's also automatically initialized to the
+// undefined value, so that the variable can be used throughout the entire scope.
+// However, let and const declarations are not quite the same in this respect.
+// Consider:
+
+// console.log(studentName9);
+// ReferenceError
+// let studentName9 = "Suzy";
+
+// The result of this program is that a Reference Error is thrown on the first line. Depending on your JS environment,
+// the error message may say something like: "Cannot access 'studentName' before initialization."
+// NOTE:
+
+// The error message as seen here used to be much more vague or misleading. Thankfully, I and others were
+// successfully able to lobby for JS engines to improve this error message so it tells you what's wrong.
+// That error message is very instructive as to what's wrong. studentName exists on line 1, but it's not been
+// initialized, so it cannot be used yet. Let's try this:
+
+// studentName10 = "Suzy"; // let's try to initialize it!
+// ReferenceError
+// console.log(studentName10);
+// let studentName10;
+
+// Oops. We still get the Reference Error, but now on the first line where we're trying to assign to (aka, initialize!) this
+// so-called "uninitialized" variable studentName . What's the deal!?
+// The real question is, how do we initialize an uninitialized variable? For let / const , the only way to do so is with
+// the assignment attached to a declaration statement. An assignment by itself is insufficient!
+
+// Consider:
+
+// some other code
+let studentName11 = "Suzy";
+console.log(studentName11);
+// Suzy
+
+// Here, we are initializing the studentName , in this case to "Suzy" instead of undefined , by way of the let
+// declaration statement form that's coupled with an assignment.
+
+// Alternately:
+// ..
+let studentName12;
+// or:
+// let studentName = undefined;
+// ..
+studentName12 = "Suzy";
+console.log(studentName12);
+// Suzy
+
+// NOTE:
+// That's interesting! Recall from earlier, we said that var studentName; is not the same as var studentName =
+// undefined;, but here with let, they behave the same. The difference comes down to the fact that var
+// studentName automatically initializes at the top of the scope, where let studentName does not.
+
+// Recall that we asserted a few times so far that Compiler ends up removing any var / let / const declaration
+// statements, replacing them with the instructions at the top of each scope to register the appropriate identifiers.
+
+// So if we analyze what's going on here, we see that an additional nuance is that Compiler is also adding an
+// instruction in the middle of the program, at the point where the variable studentName was declared, to do the
+// auto-initialization. We cannot use the variable at any point prior to that initialization occuring. The same goes for
+// const as it does for let .
+
+// The term coined by TC39 to refer to this period of time from the entering of a scope to where the auto-initialization
+// of the variable occurs, is: Temporal Dead Zone (TDZ). The TDZ is the time window where a variable exists but is
+// still uninitialized, and therefore cannot be accessed in any way. Only the execution of the instructions left by
+// Compiler at the point of the original declaration can do that initialization. After that moment, the TDZ is over, and
+// the variable is free to be used for the rest of the scope.
+
+// By the way, "temporal" in TDZ does indeed refer to time not position-in-code. Consider:
+
+askQuestion3();
+// ReferenceError
+let studentName13 = "Suzy";
+
+function askQuestion3() {
+  // console.log(`${studentName13}, what do you think?`);
+}
+// ******** Very important The time between the entering of a scope and hoisting the vairables/identifiers and the auto initialization to them
+//is call TDZ for let and const Because they don't get auto-initialized until we initialie them in our code with a value.
+
+// Even though positionally the console.log(..) referencing studentName comes after the let
+// studentName declaration, timing wise the askQuestion() function is invoked before, while studentName is
+// still in its TDZ!
+
+// Many have claimed that TDZ means let and const do not hoist. But I think this is an inaccurate, or at least
+// misleading, claim.
+
+// I assert that the real difference with let and const is that they do not get automatically initialized, the way
+// var does. The debate then is if the auto-initialization is part of hoisting, or not? I think auto-registration of a
+// variable at the top of the scope (i.e., what I call "hoisting") and auto-initialization (to undefined ) are distinct
+// operations and shouldn't be lumped together under the single term "hoisting".
+
+// We already know let and const don't auto-intialize at the top of the scope. But let's prove that let and
+// const do hoist (auto-register at the top of the scope), courtesy of our friend shadowing (see earlier in this
+// chapter):
+
+var studentName14 = "Kyle";
+{
+  console.log(studentName14);
+  // ???
+  // ..
+  let studentName14 = "Suzy";
+  console.log(studentName14);
+  // Suzy
+}
+
+// What's going to happen with the first console.log(..) statement? If let studentName didn't hoist to the
+// top of the scope, then it should print "Kyle" , right? At that moment, it seems, only the outer studentName
+// would exist.
+
+// But instead, we're going to get a TDZ error at that first console.log(..) , because in fact, the inner scope's
+// studentName was hoisted (auto-registered at the top of the scope). But what didn't happen (yet!) was the autoinitialization
+// of that inner studentName ; it's still unintialized at that moment, hence the TDZ violation!
+// So to summarize, TDZ errors occur because let / const declarations do hoist their declarations to the top of
+// their scopes, but unlike var , they defer the auto-initialization of their variables until the moment in the code's
+// sequencing where the original declaration appeared. This window of time (hint: temporal), whatever its length, is
+// the TDZ.
+
+// How can you avoid TDZ errors? My advice: always put your let and const declarations at the top of any scope.
+// Shrink the TDZ window to zero (or near zero) time, and then it'll be moot.
+// Why is TDZ even a thing? Why didn't TC39 dictate that let / const auto-initialize the way var does? We'll
+// cover the why of TDZ in Appendix A.
