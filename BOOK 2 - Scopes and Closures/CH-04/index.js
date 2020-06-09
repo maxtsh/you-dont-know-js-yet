@@ -397,3 +397,330 @@ console.log(
 // sortedNames could have been defined in the top-level function scope, but it's only needed for the second half of
 // this function. To avoid over-exposing that variable in a higher level scope, we again follow POLE and block-scope it
 // in the inner block scope.
+
+// ******** var AND let
+
+// Next, let's talk about the declaration var buckets . That variable is used across the entire function (except the
+// final return statement). Any variable that is needed across all (or even most) of a function should be declared so
+// that such usage is obvious.
+// NOTE:
+// The parameter names isn't used across the whole function, but there's no way limit the scope of a parameter, so
+// it behaves as a function-wide declaration regardless.
+// So why did we use var instead of let to declare the buckets variable? There's both stylistic and technical
+// reasons to choose var here.
+// Stylistically, var has always, from the earliest days of JS, signaled "variable that belongs to a whole function". As
+// we asserted in "Lexical Scope" (Chapter 1), var attaches to the nearest enclosing function scope, no matter
+// where it appears. That's true even if var appears inside a block:
+
+function diff(x, y) {
+  if (x > y) {
+    var tmp = x; // `tmp` is function-scoped
+    x = y;
+    y = tmp;
+  }
+  return y - x;
+}
+
+// Even though var is inside a block, its declaration is function-scoped (to diff(..) ), not block-scoped.
+// While you can declare var inside a block (and still have it be function-scoped), I would recommend you minimize
+// this approach except in a few specific cases (discussed in Appendix A). Otherwise, var should be reserved for
+// use in the top-level scope of a function.
+
+// Why not just use let in that same location? Because var is visually distinct from let and therefore signals
+// clearly, "this variable is function-scoped". Using let in the top-level scope, especially if not in the first few lines of
+// a function, especially when all the other declarations in blocks use let , does not visually draw attention to the
+// difference with the function-scoped declaration.
+
+// In other words, I feel var better communicates function-scoped than let does, and let both communicates
+// (and achieves!) block-scoping where var is insufficient. As long as your programs are going to need both
+// function-scoped and block-scoped variables, the most sensible and readable approach is to use both var AND
+// let together, each for their own best purpose.
+
+// There are other stylistic and operational reasons to choose var or let in different scenarios. We'll explore the
+// case for var alongside let in more detail in Appendix A.
+
+// WARNING:
+// My advice to use var AND let here is controversial. It's far more common to hear assertions like, "var is
+// broken, let fixes it" and, "never use var, let is the replacement". Those opinions are as valid as my opinions, but
+// they're just opinions; var is not factually broken or deprecated. It has worked since early JS and it will continue
+// to always work as long as JS is around.
+
+// When To let ?
+// My advice to reserve var for (mostly only) a top-level function scope means that all other declarations should use
+// let . But you may still be wondering how to decide where each declaration in your program belongs?
+// POLE already guides you on those decisions, but let's make sure we explicitly state it. The way to decide is not
+// based on which keyword you want to use. The way to decide is to ask, "What is the most minimal scope exposure
+// that's sufficient for this variable?" Once that is answered, you'll know if a variable belongs in a block scope or the
+// function scope. If you decide initially that a variable should be block-scoped, and later realize it needs to be
+// elevated to be function-scoped, then that dictates a change not only in the location of that variable's declaration,
+// but also the keyword used. The decision making process really should proceed like that
+// If a declaration belongs in a block scope, use let . If it belongs in the function scope, use var (again, my
+// opinion).
+
+// But another way to sort of visualize this decision making is to consider the pre-ES6 version of a program. For
+// example, let's recall diff(..) from earlier:
+
+function diff(x, y) {
+  var tmp;
+  if (x > y) {
+    tmp = x;
+    x = y;
+    y = tmp;
+  }
+  return y - x;
+}
+
+// In this version of diff(..) , tmp is clearly declared in the function scope. Is that appropriate for tmp ? I would
+// argue, no. tmp is only needed for those few statements. It's not needed once we get to the return statement. It
+// should therefore be block-scoped.
+// Prior to ES6, we didn't have let so we couldn't actually block-scope it. But we could do the next-best thing:
+function diff(x, y) {
+  if (x > y) {
+    // `tmp` is still function-scoped, but
+    // it signals block-scoping stylistically
+    var tmp = x;
+    x = y;
+    y = tmp;
+  }
+  return y - x;
+}
+
+// Placing the var declaration for tmp inside the if statement signals to the reader of the code that tmp
+// belongs to that block. Even though JS doesn't enforce that scoping, the stylistic signal still has benefit for the
+// reader of your code.
+
+// Now, you can just locate any var that's inside a block of this sort and switch it to let to enforce the signal
+// already being sent stylistically.
+
+// Another example that used to be commonly based on var but which should pretty much always be let is a
+// for loop:
+
+for (var i = 0; i < 5; i++) {
+  // do something
+}
+// No matter where such a loop is defined, the i should basically always be used only inside the loop, in which case
+// POLE tells us it should be declared with let instead of var :
+
+for (let i = 0; i < 5; i++) {
+  // do something
+}
+// Basically the only time switching a var to a let in this way would "break" your code is if you were relying on
+// accessing the loop's iterator ( i ) outside/after the loop, such as:
+
+// for (var i = 0; i < 5; i++) {
+//   if (checkValue(i)) {
+//     break;
+//   }
+// }
+// if (i < 5) {
+//   console.log("The loop stopped early!");
+// }
+
+// This usage pattern is not terribly uncommon, but most feel it signals poor code structure. A better approach is to
+// introduce another outer-scoped variable:
+
+// var lastI;
+// for (let i = 0; i < 5; i++) {
+//   lastI = i;
+//   if (checkValue(i)) {
+//     break;
+//   }
+// }
+// if (lastI < 5) {
+//   console.log("The loop stopped early!");
+// }
+
+// lastI is needed across this whole scope (function or global), so it's declared with var . i is only needed in
+// (each) loop iteration, so it's declared with let .
+// What's The Catch?
+
+// So far we've asserted that var and parameters are function-scoped, and let / const signal block-scoped
+// declarations. There's one little exception to call out: the catch clause.
+// Since the introduction of try..catch way back in ES3, the catch clause has held an additional (little-known)
+// block-scoping declaration capability:
+
+// try {
+//   doesntExist();
+// } catch (err) {
+//   console.log(err);
+//   // ReferenceError: 'doesntExist' is not defined
+//   // ^^^^ this is printed from the caught exception
+//   let onlyHere = true;
+//   var outerVariable = true;
+// }
+// console.log(outerVariable); // true
+// console.log(err);
+
+// ReferenceError: 'err' is not defined
+// ^^^^ this is another thrown (uncaught) exception
+
+// The err variable declared by the catch clause is block-scoped to that block. This clause block can have other
+// block-scoped declarations via let . But a var declaration inside this block still attaches to the outer
+// function/global scope.
+
+// ES2019 (recently, at the time of writing) changed catch clauses so their declaration is optional. If you need to
+// catch that an exception occurred (so you can gracefully recover), but you don't care about the error value itself, you
+// can omit that declaration:
+
+// try {
+//   doOptionOne();
+// } catch {
+//   // catch-declaration omitted
+//   doOptionTwoInstead();
+// }
+
+// NOTE:
+// In this case, the catch block is not a scope unless a let declaration is added inside it.
+// This is a small but delightful simplification of syntax for a fairly common use-case!
+// Functions Declarations In Blocks (FiB)
+// We've seen now that let / const declarations are block-scoped, and var declarations are function-scoped.
+// So what about function declarations that appear directly inside blocks (as a feature, called "FiB")?
+// We typically think of function declarations like they're the equivalent of a var declaration. So are they
+// function-scoped?
+
+// No, and yes. I know... that's confusing. Let's dig in.
+// Consider:
+
+if (false) {
+  function ask() {
+    console.log("Does this run?");
+  }
+}
+ask();
+
+// What do you expect for this program to do? Three reasonable outcomes:
+
+// 1. The ask() call might fail with a Reference Error exception, because the ask identifier is block-scoped to
+// the if block scope and thus isn't available in the outer/global scope.
+
+// 2. The ask() call might fail with a Type Error exception, because the ask identifier exists, but it's
+// undefined (since the if statement doesn't run) and thus not a callable function.
+
+// 3. The ask() call might run correctly, printing out the "Does it run?" message.
+
+// Here's the confusing part: depending on which JS environment you try that code snippet in, you may get different
+// results! This is one of those few crazy areas where existing legacy behavior interferes with getting a predictable
+// outcome.
+
+// The JS specification says that function declarations inside of blocks are block-scoped, so the answer should be
+// (1). However, most browser-based JS engines (including v8 which comes from Chrome but is also used in Node)
+// will behave as (2), meaning the identifier is scoped outside the if block but the function value is not
+// automatically initialized, so it remains undefined .
+
+// Why are browser JS engines allowed to behave contrary to the specification? Because these engines already had
+// certain behaviors around FiB before ES6 introduced block scoping, and there was concern that changing to adhere
+// to the specification might break some existing website JS code. As such, an exception was made in Appendix B of
+// the specification, which allows certain deviations for browser JS engines (only!).
+
+// NOTE:
+// You wouldn't typically categorize Node as being a browser JS environment, since it usually runs on a server.
+// But it's an interesting corner case since it shares the v8 engine with the Chrome (and Edge, now) browsers.
+// Since v8 is first a browser JS engine, it follows this Appendix B exception, which then means that the browser
+// exceptions are extended to Node.
+
+// One of the most common use-cases for placing a function declaration in a block is to conditionally define a
+// function one way or another (like with an if..else statement) depending on some environment state. For
+// example:
+
+if (typeof Array.isArray != "undefined") {
+  function isArray(a) {
+    return Array.isArray(a);
+  }
+} else {
+  function isArray(a) {
+    return Object.prototype.toString.call(a) == "[object Array]";
+  }
+}
+
+// It's tempting to structure code this way for performance reasons, since the typeof Array.isArray check is
+// only performed once, as opposed to defining just one isArray(..) and putting the if statement inside it,
+// where the check then runs unnecessarily on every call.
+
+// WARNING:
+// In addition to the risks of FiB deviations, one problem with the conditional-definition of functions is that it is
+// harder to debug such a program. If you end up with a bug in the isArray(..) function, you first have to figure
+// out which isArray(..) function definition is actually applied! Sometimes, the bug is that the wrong one got
+// applied because the conditional check was incorrect! If you allow a program to define multiple versions of a
+// function, that program is always harder to reason about and maintain.
+// In addition to the situations in the above snippets, there are several other corner cases around FiB you can be bitten
+// by; such behaviors in various browsers and non-browser JS environments (that is, JS engines that aren't primarily
+// browser based) will likely vary.
+// For example:
+
+if (true) {
+  function ask() {
+    console.log("Am I called?");
+  }
+}
+if (true) {
+  function ask() {
+    console.log("Or what about me?");
+  }
+}
+for (let i = 0; i < 5; i++) {
+  function ask() {
+    console.log("Or is it one of these?");
+  }
+}
+ask();
+function ask() {
+  console.log("Maybe, it's this one?");
+}
+
+// ****** important
+
+// Recall that function hoisting as described in "When Can I Use A Variable?" (Chapter 3) might suggest that the final
+// ask() in this snippet, with "Maybe..." as its message, would hoist above the call to ask() . Since it's the last
+// function declaration of that name, it should "win", right? Unfortunately, no.
+
+// It's not my intention to document all these weird corner cases, nor to try to explain why each of them behaves a
+// certain way. That information is, in my opinion, useless legacy trivia.
+
+// My real concern with FiB is, what advice can I give to ensure your code behaves predictably in all circumstances?
+// As far as I'm concerned, the only practical answer to avoiding the vagaries of FiB is to simply avoid FiB entirely. In
+// other words, never place a function declaration directly inside any block. Always place function declarations
+// at the top-level scope of a function (or in the global scope).
+
+// So for the earlier if..else example, my suggestion is to avoid conditionally defining functions if at all possible.
+// Yes it may be slightly less performant, but this is a better overall option in my opinion:
+
+function isArray(a) {
+  if (typeof Array.isArray != "undefined") {
+    return Array.isArray(a);
+  } else {
+    return Object.prototype.toString.call(a) == "[object Array]";
+  }
+}
+
+// If that performance hit becomes a critical path issue for your application, I suggest you consider this approach:
+
+var isArray = function isArray(a) {
+  return Array.isArray(a);
+};
+// override the definition, if you must
+if (typeof Array.isArray == "undefined") {
+  isArray = function isArray(a) {
+    return Object.prototype.toString.call(a) == "[object Array]";
+  };
+}
+
+// It's important to notice that here I'm placing a function expression, not a declaration, inside the if statement.
+// That's perfectly fine and valid, for function expressions to appear inside blocks. Our discussion about FiB is
+// about avoiding function declarations in blocks.
+
+// Even if you test your program and it works correctly, the small benefit you may derive from using FiB style in your
+// code is far outweighed by the potential risks in the future for confusion by other developers, or variances in how
+// your code runs in other JS environments.
+
+// FiB is not worth it, and should be avoided.
+
+// Blocked Over
+// The whole point of lexical scoping rules in a programming language is so we can appropriately organize our
+// program's variables, both for operational as well as stylistic code communication purposes.
+// And one of the most important organizational techniques we can learn to get better at is to ensure that no variable
+// is over-exposed to unnecessary scopes (POLE). Hopefully you now appreciate block scoping much more deeply
+// than before.
+
+// This whole discussion of lexical scoping so far in the book is intended to build up a solid foundation of
+// understanding so we can tackle the topic of closure effectively. Before moving on to the next chapter, make sure
+// you are fully comfortable with all the ins and outs of lexical scope.
