@@ -68,3 +68,22 @@ console.log(range(3, 0)); // []
 
 const end12 = range(6);
 console.log(end12(12));
+
+function diagonalDifference(n, ...rest) {
+  console.log(n);
+  console.log(rest);
+
+  if (n !== rest.length) return "Not a compatible format";
+  console.log(rest[1][1]);
+  let arr = [];
+  let coords = [];
+
+  for (let x = 1; x <= n; x++) {
+    for (let y = 1; y <= n; y++) {
+      coords.push(rest[x - 1][y - 1] + rest[x][y] + rest[x + 1][y + 1]);
+    }
+  }
+  return coords;
+}
+
+console.log(diagonalDifference(3, [1, 2, 3], [4, 5, 6], [7, 8, 9]));
