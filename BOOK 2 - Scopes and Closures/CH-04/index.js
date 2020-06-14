@@ -397,3 +397,34 @@ console.log(
 // sortedNames could have been defined in the top-level function scope, but it's only needed for the second half of
 // this function. To avoid over-exposing that variable in a higher level scope, we again follow POLE and block-scope it
 // in the inner block scope.
+
+// ********** Very important note:
+
+// In these two loops
+
+// console.log(window.i); // undefined // we call for global var declared i before it gets formally initialized to its undefined
+
+for (var i = 0; i <= 6; i++) {
+  setTimeout(() => {
+    console.log(i);
+  }, 1000);
+}
+
+// console.log(window.i); // 7 // we call for global var declared i after the loop so it contains number 7 end result of loop
+
+// Prints out the number 7 for seven times!
+
+for (let i = 0; i <= 6; i++) {
+  setTimeout(() => {
+    console.log(i);
+  }, 1000);
+}
+
+// Prints out numbers between 0 to 6 each of them one time
+
+// I think the reason is because of difference between var and let:
+// var attaches itself to the global object if its declared in a block scope or to the top of a function scope if declared in a function
+// unlike let that is not global scope and stays in the block scope so:
+// on the first loop with var, each time the loop runs var is not re-declared otherwise is re-assigend to next i value as i gets ++
+// so at the begining before 1000 ms the loop is over and each re-assign is done and last value gets printed 7 times
+// But in the second loop because let i is re-declared each time the loop goes on, then each scope with respect to each loop runtime prints the proportional i value to its loop so evrything works fine there and each number gets printed out.
