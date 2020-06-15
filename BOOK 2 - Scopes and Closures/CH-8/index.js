@@ -91,3 +91,22 @@ console.log(anotherTime.name); // time2
 anotherTime.name = "another-time"; // Changing
 console.log(anotherTime.name); // anothertime
 console.log(time2.name); // time2
+
+// Deep Copying Nested Objects
+const game = {
+  first: "Max Payne",
+  second: { name: "Metro Exodus", genre: "FPS" },
+};
+const newGame = { ...game };
+console.log(newGame.second.name); // Metro Exodus
+newGame.second.name = "Resident Evil 8"; // Changing
+console.log(newGame.second.name); // Resident Evil 8
+console.log(game.second.name); // Resident Evil 8
+// The ... Operator does not work if you want to deep copy nested objects
+
+// Solution: using JSON.parse() and JSON.stringify() to make deep copy of a nested object
+const anotherGame = JSON.parse(JSON.stringify(game));
+console.log(anotherGame.second.name); // Resident Evil 8
+anotherGame.second.name = "Dota 2"; // Changing
+console.log(anotherGame.second.name); // Dota 2
+console.log(game.second.name); // Still Resident Evil 8
